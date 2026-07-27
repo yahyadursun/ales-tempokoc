@@ -1470,6 +1470,126 @@ function bindEvents() {
   if (inputCustomShortBreakMins) inputCustomShortBreakMins.addEventListener('input', updateCustomDurationsFromInputs);
   if (inputCustomLongBreakMins) inputCustomLongBreakMins.addEventListener('input', updateCustomDurationsFromInputs);
 
+  // --- BOTTOM ACTION TOOLBAR HANDLERS ---
+  const btnToolbarFullscreen = document.getElementById('btn-toolbar-fullscreen');
+  const btnToolbarTimerType = document.getElementById('btn-toolbar-timer-type');
+  const btnToolbarAmbientSound = document.getElementById('btn-toolbar-ambient-sound');
+
+  const modalTimerType = document.getElementById('modal-timer-type');
+  const btnCancelTimerType = document.getElementById('btn-cancel-timer-type');
+  const btnConfirmTimerType = document.getElementById('btn-confirm-timer-type');
+  const timerTypeCards = document.querySelectorAll('#timer-type-card-options .timer-type-card');
+  let selectedTimerMode = 'countdown';
+
+  if (btnToolbarFullscreen) {
+    btnToolbarFullscreen.addEventListener('click', () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => {
+          console.warn('Fullscreen error:', err);
+        });
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+      }
+    });
+  }
+
+  if (btnToolbarTimerType && modalTimerType) {
+    btnToolbarTimerType.addEventListener('click', () => {
+      selectedTimerMode = pomodoroEngine.isCountUp ? 'countup' : 'countdown';
+      updateTimerTypeCardsUI(selectedTimerMode);
+      modalTimerType.classList.remove('hidden');
+    });
+  }
+
+  function updateTimerTypeCardsUI(mode) {
+    timerTypeCards.forEach(card => {
+      const cardMode = card.dataset.modeType;
+      const checkIcon = card.querySelector('.check-icon');
+      if (cardMode === mode) {
+        card.className = 'timer-type-card active p-4 rounded-2xl bg-[#22222b] border-2 border-rose-500/80 cursor-pointer space-y-1 transition hover:border-rose-400';
+        if (checkIcon) checkIcon.classList.remove('hidden');
+      } else {
+        card.className = 'timer-type-card p-4 rounded-2xl bg-[#22222b] border border-slate-800 cursor-pointer space-y-1 transition hover:border-slate-700';
+        if (checkIcon) checkIcon.classList.add('hidden');
+      }
+    });
+  }
+
+  timerTypeCards.forEach(card => {
+    card.addEventListener('click', () => {
+      selectedTimerMode = card.dataset.modeType;
+      updateTimerTypeCardsUI(selectedTimerMode);
+    });
+  });
+
+  if (btnCancelTimerType && modalTimerType) {
+    btnCancelTimerType.addEventListener('click', () => {
+      modalTimerType.classList.add('hidden');
+    });
+  }
+
+  if (btnConfirmTimerType && modalTimerType) {
+    btnConfirmTimerType.addEventListener('click', () => {
+      const isCountUp = selectedTimerMode === 'countup';
+      pomodoroEngine.setCountUpMode(isCountUp);
+
+      pomoPresetBtns.forEach(btn => {
+        if (btn.dataset.pomoPreset === (isCountUp ? 'countup' : 'classic')) {
+          btn.className = 'pomo-preset-btn active px-3 py-1.5 rounded-xl bg-emerald-600 text-white font-bold transition cursor-pointer flex-shrink-0';
+        } else {
+          btn.className = 'pomo-preset-btn px-3 py-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer flex-shrink-0';
+        }
+      });
+
+      updatePomodoroUI(pomodoroEngine.getState());
+      modalTimerType.classList.add('hidden');
+    });
+  }
+
+  // --- ARKA PLAN SESİ (AMBIENT SOUND) MODAL HANDLERS ---
+  const modalAmbientSound = document.getElementById('modal-ambient-sound');
+  const btnCloseAmbientModal = document.getElementById('btn-close-ambient-modal');
+  const btnDoneAmbientModal = document.getElementById('btn-done-ambient-modal');
+  const ambientOptionBtns = document.querySelectorAll('#ambient-sound-options .ambient-option-btn');
+  const inputAmbientVol = document.getElementById('input-ambient-vol');
+  const labelAmbientVol = document.getElementById('label-ambient-vol');
+
+  if (btnToolbarAmbientSound && modalAmbientSound) {
+    btnToolbarAmbientSound.addEventListener('click', () => {
+      modalAmbientSound.classList.remove('hidden');
+    });
+  }
+
+  if (btnCloseAmbientModal && modalAmbientSound) {
+    btnCloseAmbientModal.addEventListener('click', () => modalAmbientSound.classList.add('hidden'));
+  }
+  if (btnDoneAmbientModal && modalAmbientSound) {
+    btnDoneAmbientModal.addEventListener('click', () => modalAmbientSound.classList.add('hidden'));
+  }
+
+  ambientOptionBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const soundType = btn.dataset.ambient;
+      ambientOptionBtns.forEach(b => {
+        if (b === btn) {
+          b.className = 'ambient-option-btn active p-3 rounded-xl bg-emerald-600 text-white font-bold border border-emerald-500 transition cursor-pointer flex flex-col items-center gap-1';
+        } else {
+          b.className = 'ambient-option-btn p-3 rounded-xl bg-slate-950 text-slate-300 border border-slate-800 hover:bg-slate-800 transition cursor-pointer flex flex-col items-center gap-1';
+        }
+      });
+
+      soundEngine.playAmbientSound(soundType);
+    });
+  });
+
+  if (inputAmbientVol) {
+    inputAmbientVol.addEventListener('input', (e) => {
+      const val = parseInt(e.target.value, 10);
+      if (labelAmbientVol) labelAmbientVol.textContent = `${val}%`;
+      soundEngine.setAmbientVolume(val / 100);
+    });
+  }
+
   // Global Keyboard Shortcuts
   window.addEventListener('keydown', handleKeyboardShortcuts);
 }

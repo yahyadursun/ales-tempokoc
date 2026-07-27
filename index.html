@@ -970,6 +970,24 @@
                   </button>
                 </div>
 
+                <!-- Bottom Action Toolbar (Tam ekran, Zamanlayıcı Türü, Arka Plan Sesi) -->
+                <div class="w-full pt-4 border-t border-slate-800/80 flex items-center justify-around text-slate-400 text-xs font-medium">
+                  <button id="btn-toolbar-fullscreen" class="flex flex-col items-center gap-1 hover:text-white transition cursor-pointer p-1">
+                    <span class="text-lg">🖥️</span>
+                    <span>Tam ekran</span>
+                  </button>
+
+                  <button id="btn-toolbar-timer-type" class="flex flex-col items-center gap-1 hover:text-white transition cursor-pointer p-1">
+                    <span class="text-lg">⏱️</span>
+                    <span>Zamanlayıcı Türü</span>
+                  </button>
+
+                  <button id="btn-toolbar-ambient-sound" class="flex flex-col items-center gap-1 hover:text-white transition cursor-pointer p-1">
+                    <span class="text-lg">🎵</span>
+                    <span>Arka Plan Sesi</span>
+                  </button>
+                </div>
+
               </div>
             </div>
 
@@ -1183,6 +1201,97 @@
         <div class="flex justify-end pt-2 border-t border-slate-800">
           <button id="btn-close-analytics-modal" class="px-6 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs cursor-pointer">
             Kapat
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ZAMANLAYICI TÜRÜ MODAL (MATCHES USER SCREENSHOT) -->
+    <div id="modal-timer-type" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md animate-fade-in">
+      <div class="bg-[#18181f] border border-slate-800 rounded-3xl max-w-sm w-full p-6 space-y-6 shadow-2xl">
+        <h3 class="font-outfit font-bold text-lg text-white text-center">
+          Zamanlayıcı Türü
+        </h3>
+
+        <!-- Selection Cards -->
+        <div class="space-y-3" id="timer-type-card-options">
+          <!-- Option 1: Countdown -->
+          <div data-mode-type="countdown" class="timer-type-card active p-4 rounded-2xl bg-[#22222b] border-2 border-rose-500/80 cursor-pointer space-y-1 transition hover:border-rose-400">
+            <div class="flex items-center justify-between text-white font-mono font-bold text-base">
+              <span>25:00 ➔ 00:00</span>
+              <span class="text-rose-500 text-sm check-icon">✓</span>
+            </div>
+            <p class="text-xs text-slate-400">Belirlenen süreden zamanın sonuna kadar geri sayım.</p>
+          </div>
+
+          <!-- Option 2: Countup / Unlimited -->
+          <div data-mode-type="countup" class="timer-type-card p-4 rounded-2xl bg-[#22222b] border border-slate-800 cursor-pointer space-y-1 transition hover:border-slate-700">
+            <div class="flex items-center justify-between text-white font-mono font-bold text-base">
+              <span>00:00 ➔ ∞</span>
+              <span class="text-rose-500 text-sm check-icon hidden">✓</span>
+            </div>
+            <p class="text-xs text-slate-400">00:00'dan başla durdurana kadar devam et.</p>
+          </div>
+        </div>
+
+        <!-- Modal Action Footer Buttons -->
+        <div class="flex items-center justify-end gap-3 pt-2">
+          <button id="btn-cancel-timer-type" class="px-5 py-2 rounded-xl bg-[#282832] hover:bg-[#32323e] text-slate-300 font-semibold text-xs transition cursor-pointer">
+            İptal
+          </button>
+          <button id="btn-confirm-timer-type" class="px-6 py-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs shadow-lg shadow-rose-500/20 transition cursor-pointer">
+            Onayla
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ARKA PLAN SESİ (AMBIENT SOUND) MODAL -->
+    <div id="modal-ambient-sound" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md animate-fade-in">
+      <div class="bg-[#18181f] border border-slate-800 rounded-3xl max-w-sm w-full p-6 space-y-6 shadow-2xl">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <h3 class="font-outfit font-bold text-base text-white flex items-center gap-2">
+            <span>🎵</span> Arka Plan Sesi (Ambient)
+          </h3>
+          <button id="btn-close-ambient-modal" class="text-slate-400 hover:text-white text-sm">✕</button>
+        </div>
+
+        <!-- Ambient Sound Options Grid -->
+        <div class="grid grid-cols-2 gap-2 text-xs font-medium" id="ambient-sound-options">
+          <button data-ambient="none" class="ambient-option-btn active p-3 rounded-xl bg-emerald-600 text-white font-bold border border-emerald-500 transition cursor-pointer flex flex-col items-center gap-1">
+            <span class="text-xl">🔇</span>
+            <span>Kapalı</span>
+          </button>
+          <button data-ambient="rain" class="ambient-option-btn p-3 rounded-xl bg-slate-950 text-slate-300 border border-slate-800 hover:bg-slate-800 transition cursor-pointer flex flex-col items-center gap-1">
+            <span class="text-xl">🌧️</span>
+            <span>Yağmur Sesi</span>
+          </button>
+          <button data-ambient="waves" class="ambient-option-btn p-3 rounded-xl bg-slate-950 text-slate-300 border border-slate-800 hover:bg-slate-800 transition cursor-pointer flex flex-col items-center gap-1">
+            <span class="text-xl">🌊</span>
+            <span>Okyanus Dalgası</span>
+          </button>
+          <button data-ambient="coffee" class="ambient-option-btn p-3 rounded-xl bg-slate-950 text-slate-300 border border-slate-800 hover:bg-slate-800 transition cursor-pointer flex flex-col items-center gap-1">
+            <span class="text-xl">☕</span>
+            <span>Kahve Dükkanı</span>
+          </button>
+          <button data-ambient="white" class="ambient-option-btn col-span-2 p-3 rounded-xl bg-slate-950 text-slate-300 border border-slate-800 hover:bg-slate-800 transition cursor-pointer flex flex-col items-center gap-1">
+            <span class="text-xl">📻</span>
+            <span>Beyaz Gürültü (White Noise)</span>
+          </button>
+        </div>
+
+        <!-- Ambient Volume Slider -->
+        <div class="space-y-1.5 pt-2 border-t border-slate-800">
+          <div class="flex justify-between items-center text-xs">
+            <span class="text-slate-400 font-medium">Ambient Ses Seviyesi</span>
+            <span id="label-ambient-vol" class="font-mono text-emerald-400 font-bold">50%</span>
+          </div>
+          <input type="range" id="input-ambient-vol" min="0" max="100" value="50" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500">
+        </div>
+
+        <div class="flex justify-end">
+          <button id="btn-done-ambient-modal" class="px-6 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs cursor-pointer">
+            Tamam
           </button>
         </div>
       </div>

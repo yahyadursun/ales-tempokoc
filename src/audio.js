@@ -1,4 +1,4 @@
-// Web Audio API Sound Generator for ALES TempoKoç
+// Web Audio API Sound Generator & Ambient Noise Synthesizer for ALES TempoKoç
 
 class SoundEngine {
   constructor() {
@@ -6,6 +6,12 @@ class SoundEngine {
     this.muted = false;
     this.volume = 0.7;
     this.soundType = 'chime'; // 'chime', 'beep', 'bell', 'digital'
+
+    // Ambient Sound Generator Nodes
+    this.ambientSource = null;
+    this.ambientGain = null;
+    this.ambientType = null; // 'rain', 'waves', 'white', 'coffee'
+    this.ambientVolume = 0.5;
   }
 
   init() {
@@ -22,6 +28,9 @@ class SoundEngine {
 
   setMuted(muted) {
     this.muted = muted;
+    if (muted) {
+      this.stopAmbientSound();
+    }
   }
 
   setVolume(vol) {
@@ -58,7 +67,7 @@ class SoundEngine {
     }
   }
 
-  // Soft click / tick for countdown (e.g. 5, 4, 3, 2, 1)
+  // Soft click / tick for countdown
   playCountdownTick() {
     if (this.muted) return;
     this.init();
@@ -90,7 +99,6 @@ class SoundEngine {
     }
   }
 
-  // Pleasant chime when question is solved
   playQuestionComplete() {
     if (this.muted) return;
     this.init();
@@ -100,7 +108,6 @@ class SoundEngine {
     this.playTone(880, 'triangle', 0.2, 0.08, this.volume * 0.7); // A5
   }
 
-  // Pas / Boş Bırakıldığında hafif ton
   playSkipSound() {
     if (this.muted) return;
     this.init();
@@ -110,7 +117,6 @@ class SoundEngine {
     this.playTone(300, 'sine', 0.15, 0.08, this.volume * 0.3);
   }
 
-  // Session victory chime
   playSessionFinish() {
     if (this.muted) return;
     this.init();
@@ -124,6 +130,86 @@ class SoundEngine {
 
   testSound() {
     this.playTimeoutAlert();
+  }
+
+  // --- AMBIENT SOUND SYNTHESIZER ---
+  playAmbientSound(type) {
+    this.init();
+    if (!this.ctx) return;
+    this.stopAmbientSound();
+
+    if (type === 'none') return;
+
+    this.ambientType = type;
+    const bufferSize = 2 * this.ctx.sampleRate;
+    const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const output = noiseBuffer.getChannelData(0);
+
+    for (let i = 0; i < bufferSize; i++) {
+      output[i] = Math.random() * 2 - 1;
+    }
+
+    const whiteNoise = this.ctx.createBufferSource();
+    whiteNoise.buffer = noiseBuffer;
+    whiteNoise.loop = true;
+
+    const filter = this.ctx.createBiquadFilter();
+    this.ambientGain = this.ctx.createGain();
+
+    if (type === 'rain') {
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(1000, this.ctx.currentTime);
+      this.ambientGain.gain.setValueAtTime(this.ambientVolume * 0.15, this.ctx.currentTime);
+    } else if (type === 'waves') {
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(400, this.ctx.currentTime);
+      
+      // LFO for wave swelling
+      const lfo = this.ctx.createOscillator();
+      lfo.frequency.value = 0.1; // Slow wave swelling every 10 seconds
+      const lfoGain = this.ctx.createGain();
+      lfoGain.gain.value = this.ambientVolume * 0.1;
+      lfo.connect(lfoGain);
+      lfoGain.connect(this.ambientGain.gain);
+      lfo.start();
+
+      this.ambientGain.gain.setValueAtTime(this.ambientVolume * 0.12, this.ctx.currentTime);
+    } else if (type === 'coffee') {
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(800, this.ctx.currentTime);
+      filter.Q.value = 1.2;
+      this.ambientGain.gain.setValueAtTime(this.ambientVolume * 0.1, this.ctx.currentTime);
+    } else {
+      // White noise
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(3000, this.ctx.currentTime);
+      this.ambientGain.gain.setValueAtTime(this.ambientVolume * 0.08, this.ctx.currentTime);
+    }
+
+    whiteNoise.connect(filter);
+    filter.connect(this.ambientGain);
+    this.ambientGain.connect(this.ctx.destination);
+
+    whiteNoise.start();
+    this.ambientSource = whiteNoise;
+  }
+
+  stopAmbientSound() {
+    if (this.ambientSource) {
+      try {
+        this.ambientSource.stop();
+        this.ambientSource.disconnect();
+      } catch (e) {}
+      this.ambientSource = null;
+    }
+    this.ambientType = null;
+  }
+
+  setAmbientVolume(vol) {
+    this.ambientVolume = Math.max(0, Math.min(1, vol));
+    if (this.ambientGain && this.ctx) {
+      this.ambientGain.gain.setValueAtTime(this.ambientVolume * 0.15, this.ctx.currentTime);
+    }
   }
 }
 
