@@ -711,10 +711,11 @@
               </div>
 
               <!-- Quick Pomodoro Preset Selectors -->
-              <div class="flex items-center gap-1.5 bg-slate-950 p-1.5 rounded-2xl border border-slate-800 text-xs font-mono">
-                <button data-pomo-preset="classic" class="pomo-preset-btn active px-3 py-1.5 rounded-xl bg-emerald-600 text-white font-bold transition cursor-pointer">25/5 Dk</button>
-                <button data-pomo-preset="deep" class="pomo-preset-btn px-3 py-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer">50/10 Dk</button>
-                <button id="btn-pomo-custom-toggle" class="px-3 py-1.5 rounded-xl text-emerald-400 hover:bg-emerald-950/50 border border-emerald-500/30 font-bold transition cursor-pointer flex items-center gap-1">
+              <div class="flex items-center gap-1.5 bg-slate-950 p-1.5 rounded-2xl border border-slate-800 text-xs font-mono overflow-x-auto custom-scrollbar">
+                <button data-pomo-preset="classic" class="pomo-preset-btn active px-3 py-1.5 rounded-xl bg-emerald-600 text-white font-bold transition cursor-pointer flex-shrink-0">25/5 Dk</button>
+                <button data-pomo-preset="deep" class="pomo-preset-btn px-3 py-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer flex-shrink-0">50/10 Dk</button>
+                <button data-pomo-preset="countup" class="pomo-preset-btn px-3 py-1.5 rounded-xl text-amber-300 border border-amber-500/30 hover:bg-amber-950/40 transition cursor-pointer flex-shrink-0 font-bold">♾️ İleri Sayım (Sınırsız)</button>
+                <button id="btn-pomo-custom-toggle" class="px-3 py-1.5 rounded-xl text-emerald-400 hover:bg-emerald-950/50 border border-emerald-500/30 font-bold transition cursor-pointer flex-shrink-0 flex items-center gap-1">
                   <span>⚙️</span> Özel Süre
                 </button>
               </div>

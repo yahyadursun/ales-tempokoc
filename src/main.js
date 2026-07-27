@@ -591,19 +591,26 @@ function updatePomodoroUI(state) {
     }
   });
 
-  const phaseTitle = state.phase === 'work' ? 'ODAKLANMA ZAMANI 🍅' : (state.phase === 'shortBreak' ? 'KISA MOLA ZAMANI ☕' : 'UZUN MOLA ZAMANI 🌴');
+  const phaseTitle = state.isCountUp
+    ? '♾️ SINIRSIZ İLERİ SAYIM'
+    : (state.phase === 'work' ? 'ODAKLANMA ZAMANI 🍅' : (state.phase === 'shortBreak' ? 'KISA MOLA ZAMANI ☕' : 'UZUN MOLA ZAMANI 🌴'));
   if (pomoPhaseLabel) pomoPhaseLabel.textContent = phaseTitle;
   document.querySelectorAll('.pomo-phase-label-alt').forEach(el => el.textContent = phaseTitle);
 
   if (pomoRingCircle) {
     const totalLength = 527.78;
-    const ratio = Math.max(0, state.remainingSeconds / state.targetDuration);
-    const strokeOffset = totalLength * (1 - ratio);
-    pomoRingCircle.style.strokeDashoffset = strokeOffset;
-    if (state.phase === 'work') {
-      pomoRingCircle.setAttribute('class', 'stroke-rose-500 transition-all duration-150');
+    if (state.isCountUp) {
+      pomoRingCircle.style.strokeDashoffset = 0;
+      pomoRingCircle.setAttribute('class', 'stroke-amber-400 transition-all duration-150');
     } else {
-      pomoRingCircle.setAttribute('class', 'stroke-teal-400 transition-all duration-150');
+      const ratio = Math.max(0, state.remainingSeconds / state.targetDuration);
+      const strokeOffset = totalLength * (1 - ratio);
+      pomoRingCircle.style.strokeDashoffset = strokeOffset;
+      if (state.phase === 'work') {
+        pomoRingCircle.setAttribute('class', 'stroke-rose-500 transition-all duration-150');
+      } else {
+        pomoRingCircle.setAttribute('class', 'stroke-teal-400 transition-all duration-150');
+      }
     }
   }
 
@@ -1375,14 +1382,18 @@ function bindEvents() {
     btn.addEventListener('click', () => {
       const preset = btn.dataset.pomoPreset;
       pomoPresetBtns.forEach(b => {
-        if (b === btn) b.className = 'pomo-preset-btn active px-3 py-1.5 rounded-xl bg-emerald-600 text-white font-bold transition cursor-pointer';
-        else b.className = 'pomo-preset-btn px-3 py-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer';
+        if (b === btn) b.className = 'pomo-preset-btn active px-3 py-1.5 rounded-xl bg-emerald-600 text-white font-bold transition cursor-pointer flex-shrink-0';
+        else b.className = 'pomo-preset-btn px-3 py-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer flex-shrink-0';
       });
 
       if (preset === 'classic') {
+        pomodoroEngine.setCountUpMode(false);
         pomodoroEngine.setDurations({ workMins: 25, shortBreakMins: 5, longBreakMins: 15 });
       } else if (preset === 'deep') {
+        pomodoroEngine.setCountUpMode(false);
         pomodoroEngine.setDurations({ workMins: 50, shortBreakMins: 10, longBreakMins: 20 });
+      } else if (preset === 'countup') {
+        pomodoroEngine.setCountUpMode(true);
       }
       updatePomodoroUI(pomodoroEngine.getState());
     });

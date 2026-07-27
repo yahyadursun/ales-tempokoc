@@ -1,9 +1,10 @@
-// TempoKoç — Pomodoro Focus Engine
+// TempoKoç — Pomodoro Focus Engine (Supports Countdown & Unlimited Count-Up Stopwatch Modes)
 
 export class PomodoroEngine {
   constructor() {
     this.status = 'idle'; // 'idle', 'running', 'paused', 'break'
     this.phase = 'work'; // 'work', 'shortBreak', 'longBreak'
+    this.isCountUp = false; // Unlimited Stopwatch Mode (Sınırsız İleri Sayım)
     
     // Default Durations in seconds
     this.durations = {
@@ -27,12 +28,25 @@ export class PomodoroEngine {
     this.callbacks = callbacks;
   }
 
+  setCountUpMode(enabled) {
+    this.isCountUp = enabled;
+    if (this.status === 'idle') {
+      if (enabled) {
+        this.elapsedSecondsInPhase = 0;
+        this.remainingSeconds = 0;
+      } else {
+        this.remainingSeconds = this.durations[this.phase];
+      }
+      this.emitState();
+    }
+  }
+
   setDurations({ workMins = 25, shortBreakMins = 5, longBreakMins = 15 }) {
     this.durations.work = workMins * 60;
     this.durations.shortBreak = shortBreakMins * 60;
     this.durations.longBreak = longBreakMins * 60;
     
-    if (this.status === 'idle') {
+    if (this.status === 'idle' && !this.isCountUp) {
       this.remainingSeconds = this.durations[this.phase];
     }
   }
@@ -46,8 +60,14 @@ export class PomodoroEngine {
 
   startPhase(phaseName = 'work') {
     this.phase = phaseName;
-    this.remainingSeconds = this.durations[phaseName];
     this.elapsedSecondsInPhase = 0;
+
+    if (this.isCountUp && phaseName === 'work') {
+      this.remainingSeconds = 0;
+    } else {
+      this.remainingSeconds = this.durations[phaseName];
+    }
+
     this.status = 'running';
     this.lastTickTime = performance.now();
 
@@ -71,12 +91,15 @@ export class PomodoroEngine {
 
   skipPhase() {
     if (this.timerInterval) clearInterval(this.timerInterval);
+    
     if (this.phase === 'work') {
-      // Completed a work phase
+      const workedSeconds = Math.round(this.elapsedSecondsInPhase);
       this.completedWorkCycles++;
+      
       if (this.callbacks.onWorkComplete) {
-        this.callbacks.onWorkComplete(this.durations.work, this.activeTask);
+        this.callbacks.onWorkComplete(workedSeconds > 0 ? workedSeconds : (this.durations.work || 1500), this.activeTask);
       }
+      
       const nextPhase = (this.completedWorkCycles % this.longBreakInterval === 0) ? 'longBreak' : 'shortBreak';
       this.startPhase(nextPhase);
     } else {
@@ -89,8 +112,8 @@ export class PomodoroEngine {
     if (this.timerInterval) clearInterval(this.timerInterval);
     this.status = 'idle';
     this.phase = 'work';
-    this.remainingSeconds = this.durations.work;
     this.elapsedSecondsInPhase = 0;
+    this.remainingSeconds = this.isCountUp ? 0 : this.durations.work;
     this.emitState();
   }
 
@@ -101,14 +124,19 @@ export class PomodoroEngine {
     const deltaSec = (now - this.lastTickTime) / 1000;
     this.lastTickTime = now;
 
-    this.remainingSeconds -= deltaSec;
     this.elapsedSecondsInPhase += deltaSec;
 
-    if (this.remainingSeconds <= 0) {
-      this.remainingSeconds = 0;
-      this.onPhaseEnded();
-    } else {
+    if (this.isCountUp && this.phase === 'work') {
+      this.remainingSeconds = this.elapsedSecondsInPhase;
       this.emitState();
+    } else {
+      this.remainingSeconds -= deltaSec;
+      if (this.remainingSeconds <= 0) {
+        this.remainingSeconds = 0;
+        this.onPhaseEnded();
+      } else {
+        this.emitState();
+      }
     }
   }
 
@@ -118,7 +146,7 @@ export class PomodoroEngine {
     if (this.phase === 'work') {
       this.completedWorkCycles++;
       if (this.callbacks.onWorkComplete) {
-        this.callbacks.onWorkComplete(this.durations.work, this.activeTask);
+        this.callbacks.onWorkComplete(Math.round(this.elapsedSecondsInPhase), this.activeTask);
       }
       const nextPhase = (this.completedWorkCycles % this.longBreakInterval === 0) ? 'longBreak' : 'shortBreak';
       this.status = 'idle';
@@ -130,7 +158,7 @@ export class PomodoroEngine {
     } else {
       this.status = 'idle';
       this.phase = 'work';
-      this.remainingSeconds = this.durations.work;
+      this.remainingSeconds = this.isCountUp ? 0 : this.durations.work;
       if (this.callbacks.onPhaseFinish) {
         this.callbacks.onPhaseFinish('break', 'work');
       }
@@ -140,12 +168,18 @@ export class PomodoroEngine {
 
   getState() {
     const targetDuration = this.durations[this.phase] || 1500;
-    const progressPercent = Math.min(100, (this.elapsedSecondsInPhase / targetDuration) * 100);
+    const isCountUpWork = this.isCountUp && this.phase === 'work';
+
+    const progressPercent = isCountUpWork
+      ? 100
+      : Math.min(100, (this.elapsedSecondsInPhase / targetDuration) * 100);
 
     return {
       status: this.status,
       phase: this.phase,
-      remainingSeconds: Math.ceil(this.remainingSeconds),
+      isCountUp: isCountUpWork,
+      remainingSeconds: isCountUpWork ? Math.floor(this.elapsedSecondsInPhase) : Math.ceil(this.remainingSeconds),
+      elapsedSecondsInPhase: Math.floor(this.elapsedSecondsInPhase),
       targetDuration,
       progressPercent,
       completedWorkCycles: this.completedWorkCycles,
