@@ -4,8 +4,8 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ALES & YÖK Sınavları TempoKoç | Çift Kronometreli Tempo Asistanı</title>
-    <meta name="description" content="ALES, YDS, YÖKDİL, TUS, DUS ve YKS sınavları için hem soru başına düşen süreyi hem genel sınav süresini eşzamanlı takip eden tempo ve pratik web uygulaması." />
+    <title>Pomodoro ile TempoKoç — Görev & Odaklanma Koçu</title>
+    <meta name="description" content="Focus To-Do görev takibi, özelleştirilebilir Pomodoro zamanlayıcıları ve ÖSYM/YÖK sınavları için çift kronometreli tempo koçu." />
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -34,7 +34,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <!-- Logo -->
           <div class="flex items-center gap-3 cursor-pointer" id="btn-logo-home">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-500 flex items-center justify-center shadow-lg shadow-indigo-500/20 ring-1 ring-white/20">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 ring-1 ring-white/20">
               <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="10"/>
                 <polyline points="12 6 12 12 16 14"/>
@@ -42,23 +42,22 @@
             </div>
             <div>
               <div class="flex items-center gap-2">
-                <span class="font-outfit font-extrabold text-xl tracking-tight bg-gradient-to-r from-white via-slate-100 to-indigo-200 bg-clip-text text-transparent">ALES TempoKoç</span>
-                <span class="px-2 py-0.5 text-[10px] font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded-full">v2.5</span>
+                <span class="font-outfit font-extrabold text-xl tracking-tight bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">Pomodoro ile TempoKoç</span>
+                <span class="px-2 py-0.5 text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full">v3.0</span>
               </div>
-              <p class="text-xs text-slate-400 font-medium hidden sm:block">YÖK & ÖSYM Sınavları Çift Kronometreli Tempo Koçu</p>
+              <p class="text-xs text-slate-400 font-medium hidden sm:block">Görev Takibi, Pomodoro Odaklanma & Sınav Koçu</p>
             </div>
           </div>
 
           <!-- Main App Modes Switcher Tabs (Header) -->
           <div class="hidden sm:flex items-center gap-1.5 p-1 bg-slate-950/80 rounded-xl border border-slate-800 text-xs font-bold shadow-inner">
-            <button id="btn-mode-exam" class="app-mode-tab active px-3.5 py-1.5 rounded-lg transition text-white bg-gradient-to-r from-indigo-600 to-purple-600 shadow flex items-center gap-1.5 cursor-pointer">
-              <span>🏆</span>
-              <span>Sınav & Deneme</span>
-            </button>
-            <button id="btn-mode-focustodo" class="app-mode-tab px-3.5 py-1.5 rounded-lg transition text-slate-400 hover:text-white hover:bg-slate-800 flex items-center gap-1.5 cursor-pointer">
+            <button id="btn-mode-focustodo" class="app-mode-tab active px-3.5 py-1.5 rounded-lg transition text-white bg-gradient-to-r from-emerald-600 to-teal-600 shadow flex items-center gap-1.5 cursor-pointer">
               <span>🎯</span>
-              <span>Focus To-Do</span>
-              <span class="px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 text-[9px]">YENİ</span>
+              <span>Pomodoro & Focus</span>
+            </button>
+            <button id="btn-mode-exam" class="app-mode-tab px-3.5 py-1.5 rounded-lg transition text-slate-400 hover:text-white hover:bg-slate-800 flex items-center gap-1.5 cursor-pointer">
+              <span>🏆</span>
+              <span>Sınav & Deneme Modu</span>
             </button>
           </div>
 

@@ -38,7 +38,7 @@ const views = {
 // Mode Switcher Tabs
 const btnModeExam = document.getElementById('btn-mode-exam');
 const btnModeFocusTodo = document.getElementById('btn-mode-focustodo');
-let currentAppMode = 'exam'; // 'exam' or 'focustodo'
+let currentAppMode = 'focustodo'; // Default landing view is now Pomodoro & Focus To-Do!
 
 // Header Controls
 const btnStartSession = document.getElementById('btn-start-session');
@@ -195,6 +195,9 @@ function initApp() {
 
   const savedClockStyle = StorageManager.getClockStylePreference();
   setClockStyle(savedClockStyle);
+
+  // Set default view to Pomodoro & Focus To-Do
+  setAppMode('focustodo');
 
   // Notification permission lazy prompt
   if ('Notification' in window && Notification.permission === 'default') {

@@ -1,6 +1,6 @@
-# TempoKoç — Sınav Pacer & Focus To-Do ⏱️🎯
+# Pomodoro ile TempoKoç ⏱️🎯
 
-> **TempoKoç**: Hem **ALES, YDS, YÖKDİL, TUS, DUS ve YKS** sınavları için çift kronometreli soru/sınav temposu tutan, hem de günlük ders çalışma ve konular için **Focus To-Do (Görev Yönetimi & Pomodoro)** desteği sunan zaman yönetimi ve odaklanma asistanı.
+> **Pomodoro ile TempoKoç**: Günlük ders çalışma ve konu takibi için **Focus To-Do (Görev Yönetimi & Pomodoro)** desteği sunan ve **ALES, YDS, YÖKDİL, TUS, DUS ve YKS** sınavları için çift kronometreli soru/sınav temposu tutan zaman yönetimi ve odaklanma asistanı.
 
 ---
 
