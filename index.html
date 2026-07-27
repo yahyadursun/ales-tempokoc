@@ -711,9 +711,37 @@
               </div>
 
               <!-- Quick Pomodoro Preset Selectors -->
-              <div class="flex items-center gap-2 bg-slate-950 p-1.5 rounded-2xl border border-slate-800 text-xs font-mono">
-                <button data-pomo-preset="classic" class="pomo-preset-btn active px-3 py-1.5 rounded-xl bg-emerald-600 text-white font-bold transition cursor-pointer">25/5 Dk (Klasik)</button>
-                <button data-pomo-preset="deep" class="pomo-preset-btn px-3 py-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer">50/10 Dk (Derin Odak)</button>
+              <div class="flex items-center gap-1.5 bg-slate-950 p-1.5 rounded-2xl border border-slate-800 text-xs font-mono">
+                <button data-pomo-preset="classic" class="pomo-preset-btn active px-3 py-1.5 rounded-xl bg-emerald-600 text-white font-bold transition cursor-pointer">25/5 Dk</button>
+                <button data-pomo-preset="deep" class="pomo-preset-btn px-3 py-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer">50/10 Dk</button>
+                <button id="btn-pomo-custom-toggle" class="px-3 py-1.5 rounded-xl text-emerald-400 hover:bg-emerald-950/50 border border-emerald-500/30 font-bold transition cursor-pointer flex items-center gap-1">
+                  <span>⚙️</span> Özel Süre
+                </button>
+              </div>
+            </div>
+
+            <!-- Custom Pomodoro Durations Panel -->
+            <div id="custom-pomo-panel" class="hidden bg-slate-950/90 p-4 rounded-2xl border border-emerald-500/30 space-y-3 animate-fade-in">
+              <div class="flex items-center justify-between text-xs font-bold text-emerald-400">
+                <span>⚙️ Özel Pomodoro Sürelerini Ayarla</span>
+                <button id="btn-close-custom-pomo" class="text-slate-400 hover:text-white cursor-pointer">✕</button>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+                <div class="space-y-1">
+                  <label class="font-semibold text-slate-300">🍅 Çalışma (Dk): <span id="label-custom-work-mins" class="font-mono text-emerald-400 font-bold">25 Dk</span></label>
+                  <input type="range" id="input-custom-work-mins" min="5" max="120" step="5" value="25" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500">
+                </div>
+
+                <div class="space-y-1">
+                  <label class="font-semibold text-slate-300">☕ Kısa Mola (Dk): <span id="label-custom-short-break-mins" class="font-mono text-teal-400 font-bold">5 Dk</span></label>
+                  <input type="range" id="input-custom-short-break-mins" min="1" max="30" step="1" value="5" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-teal-500">
+                </div>
+
+                <div class="space-y-1">
+                  <label class="font-semibold text-slate-300">🌴 Uzun Mola (Dk): <span id="label-custom-long-break-mins" class="font-mono text-cyan-400 font-bold">15 Dk</span></label>
+                  <input type="range" id="input-custom-long-break-mins" min="5" max="60" step="5" value="15" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-500">
+                </div>
               </div>
             </div>
 
@@ -1125,6 +1153,29 @@
             <div class="relative w-full h-64 flex items-center justify-center">
               <canvas id="chart-subject-distribution"></canvas>
             </div>
+          </div>
+        </div>
+
+        <!-- Task-Based Breakdown Table -->
+        <div class="bg-slate-950/80 p-5 rounded-2xl border border-slate-800 space-y-3">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center justify-between">
+            <span>📝 Görev Bazlı Çalışma Detayları</span>
+            <span class="text-[11px] text-slate-400 font-normal">Tamamlanan Görevler & Harcanan Süreler</span>
+          </h4>
+          <div class="max-h-48 overflow-y-auto custom-scrollbar border border-slate-800 rounded-xl">
+            <table class="w-full text-left text-xs text-slate-300">
+              <thead class="bg-slate-900 text-slate-400 font-semibold sticky top-0 border-b border-slate-800">
+                <tr>
+                  <th class="p-2.5">Görev Başlığı</th>
+                  <th class="p-2.5">Ders</th>
+                  <th class="p-2.5">Harcanan Süre</th>
+                  <th class="p-2.5">Tamamlanan Oturum</th>
+                </tr>
+              </thead>
+              <tbody id="analytics-tasks-table-body" class="divide-y divide-slate-800/60 font-mono">
+                <!-- Injected via JS -->
+              </tbody>
+            </table>
           </div>
         </div>
 

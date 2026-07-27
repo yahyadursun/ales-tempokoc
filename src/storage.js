@@ -205,7 +205,7 @@ export class StorageManager {
     }
   }
 
-  static recordStudyLog({ subject = 'Genel', durationSec = 1500, type = 'pomodoro', taskId = null }) {
+  static recordStudyLog({ subject = 'Genel', durationSec = 1500, type = 'pomodoro', taskId = null, taskTitle = null }) {
     try {
       const logs = this.getStudyLogs();
       const now = new Date();
@@ -222,7 +222,8 @@ export class StorageManager {
         subject,
         durationSec,
         type,
-        taskId
+        taskId,
+        taskTitle: taskTitle || (subject + ' Çalışması')
       };
 
       logs.unshift(newLog);
@@ -271,13 +272,21 @@ export class StorageManager {
     
     let totalSec = 0;
     const subjectMap = {};
+    const taskMap = {};
 
     logs.forEach(l => {
       totalSec += l.durationSec;
       subjectMap[l.subject] = (subjectMap[l.subject] || 0) + l.durationSec;
+
+      const tKey = l.taskTitle || l.subject;
+      if (!taskMap[tKey]) {
+        taskMap[tKey] = { subject: l.subject, durationSec: 0, count: 0 };
+      }
+      taskMap[tKey].durationSec += l.durationSec;
+      taskMap[tKey].count += 1;
     });
 
-    return { date: targetDate, totalSec, logsCount: logs.length, subjectMap };
+    return { date: targetDate, totalSec, logsCount: logs.length, subjectMap, taskMap };
   }
 
   static getMonthlyAnalytics(year, month) {
@@ -290,15 +299,23 @@ export class StorageManager {
     const daysInMonth = new Date(targetYear, targetMonth, 0).getDate();
     const dailyTotals = Array(daysInMonth).fill(0);
     const subjectMap = {};
+    const taskMap = {};
     let totalSec = 0;
 
     logs.forEach(l => {
       totalSec += l.durationSec;
       dailyTotals[l.day - 1] += l.durationSec;
       subjectMap[l.subject] = (subjectMap[l.subject] || 0) + l.durationSec;
+
+      const tKey = l.taskTitle || l.subject;
+      if (!taskMap[tKey]) {
+        taskMap[tKey] = { subject: l.subject, durationSec: 0, count: 0 };
+      }
+      taskMap[tKey].durationSec += l.durationSec;
+      taskMap[tKey].count += 1;
     });
 
-    return { year: targetYear, month: targetMonth, daysInMonth, dailyTotals, totalSec, subjectMap };
+    return { year: targetYear, month: targetMonth, daysInMonth, dailyTotals, totalSec, subjectMap, taskMap };
   }
 
   static getYearlyAnalytics(year) {
@@ -307,15 +324,23 @@ export class StorageManager {
 
     const monthlyTotals = Array(12).fill(0);
     const subjectMap = {};
+    const taskMap = {};
     let totalSec = 0;
 
     logs.forEach(l => {
       totalSec += l.durationSec;
       monthlyTotals[l.month - 1] += l.durationSec;
       subjectMap[l.subject] = (subjectMap[l.subject] || 0) + l.durationSec;
+
+      const tKey = l.taskTitle || l.subject;
+      if (!taskMap[tKey]) {
+        taskMap[tKey] = { subject: l.subject, durationSec: 0, count: 0 };
+      }
+      taskMap[tKey].durationSec += l.durationSec;
+      taskMap[tKey].count += 1;
     });
 
-    return { year: targetYear, monthlyTotals, totalSec, subjectMap };
+    return { year: targetYear, monthlyTotals, totalSec, subjectMap, taskMap };
   }
 
   // --- POMODORO SETTINGS & THEMES ---

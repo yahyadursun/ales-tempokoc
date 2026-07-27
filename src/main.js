@@ -389,8 +389,10 @@ function setupPomodoroCallbacks() {
     },
     onWorkComplete: (workSec, task) => {
       const subject = task ? task.subject : 'Genel Odaklanma';
+      const taskTitle = task ? task.title : 'Serbest Odaklanma Oturumu';
       StorageManager.recordStudyLog({
         subject,
+        taskTitle,
         durationSec: workSec,
         type: 'pomodoro',
         taskId: task ? task.id : null
@@ -739,6 +741,29 @@ function renderAnalyticsCharts(period = 'daily') {
       }
     });
   }
+
+  // Populate Task Breakdown Table
+  const tasksTableBody = document.getElementById('analytics-tasks-table-body');
+  if (tasksTableBody) {
+    const taskMap = analyticsData.taskMap || {};
+    const taskKeys = Object.keys(taskMap);
+
+    if (taskKeys.length === 0) {
+      tasksTableBody.innerHTML = '<tr><td colspan="4" class="p-3 text-center text-slate-500 italic">Bu dönemde tamamlanan görev / oturum kaydı bulunamadı.</td></tr>';
+    } else {
+      tasksTableBody.innerHTML = taskKeys.map(key => {
+        const item = taskMap[key];
+        return `
+          <tr class="hover:bg-slate-900/60">
+            <td class="p-2.5 font-bold text-white">${key}</td>
+            <td class="p-2.5 text-slate-400 font-sans">${item.subject}</td>
+            <td class="p-2.5 font-mono text-emerald-400 font-bold">${formatHHMMSS(item.durationSec)}</td>
+            <td class="p-2.5 font-mono text-indigo-300">${item.count} Oturum 🍅</td>
+          </tr>
+        `;
+      }).join('');
+    }
+  }
 }
 
 // Render Focus To-Do Tasks List
@@ -784,8 +809,11 @@ function renderTasks(filter = 'all') {
         </div>
 
         <div class="flex items-center gap-1.5 flex-shrink-0">
-          <button data-select-task-id="${t.id}" class="btn-select-task px-2.5 py-1 rounded-lg text-xs font-semibold ${isSelected ? 'bg-emerald-500 text-white' : 'bg-slate-800 text-emerald-300 hover:bg-slate-700'} transition cursor-pointer" title="Bu göreve odaklan">
-            ${isSelected ? '✓ Odaklanılıyor' : '🎯 Odaklan'}
+          <button data-start-task-id="${t.id}" class="btn-start-task px-2.5 py-1 rounded-lg text-xs font-bold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white transition cursor-pointer shadow flex items-center gap-1" title="Göreve odaklan ve Pomodoro'yu başlat">
+            🚀 Başlat
+          </button>
+          <button data-select-task-id="${t.id}" class="btn-select-task px-2 py-1 rounded-lg text-xs font-semibold ${isSelected ? 'bg-emerald-500 text-white' : 'bg-slate-800 text-emerald-300 hover:bg-slate-700'} transition cursor-pointer" title="Bu görevi seç">
+            ${isSelected ? '✓ Seçili' : '🎯 Seç'}
           </button>
           <button data-delete-task-id="${t.id}" class="btn-delete-task text-slate-500 hover:text-rose-400 p-1.5 transition cursor-pointer" title="Sil">🗑️</button>
         </div>
@@ -799,6 +827,25 @@ function renderTasks(filter = 'all') {
       StorageManager.toggleTask(id);
       renderTasks(currentTaskFilter);
       updateDailyStatsUI();
+    });
+  });
+
+  document.querySelectorAll('.btn-start-task').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const id = e.currentTarget.dataset.startTaskId;
+      const tasks = StorageManager.getTasks();
+      const selected = tasks.find(t => t.id === id);
+      if (selected) {
+        soundEngine.init();
+        pomodoroEngine.setActiveTask(selected);
+        renderTasks(currentTaskFilter);
+        pomodoroEngine.startPhase('work');
+
+        const timerContainer = document.getElementById('pomo-clock-container');
+        if (timerContainer) {
+          timerContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
     });
   });
 
@@ -1370,6 +1417,47 @@ function bindEvents() {
       pomodoroEngine.resetSession();
     });
   }
+
+  // Custom Pomodoro Duration Controls
+  const btnPomoCustomToggle = document.getElementById('btn-pomo-custom-toggle');
+  const btnCloseCustomPomo = document.getElementById('btn-close-custom-pomo');
+  const customPomoPanel = document.getElementById('custom-pomo-panel');
+  const inputCustomWorkMins = document.getElementById('input-custom-work-mins');
+  const inputCustomShortBreakMins = document.getElementById('input-custom-short-break-mins');
+  const inputCustomLongBreakMins = document.getElementById('input-custom-long-break-mins');
+
+  const labelCustomWorkMins = document.getElementById('label-custom-work-mins');
+  const labelCustomShortBreakMins = document.getElementById('label-custom-short-break-mins');
+  const labelCustomLongBreakMins = document.getElementById('label-custom-long-break-mins');
+
+  if (btnPomoCustomToggle && customPomoPanel) {
+    btnPomoCustomToggle.addEventListener('click', () => {
+      customPomoPanel.classList.toggle('hidden');
+    });
+  }
+
+  if (btnCloseCustomPomo && customPomoPanel) {
+    btnCloseCustomPomo.addEventListener('click', () => {
+      customPomoPanel.classList.add('hidden');
+    });
+  }
+
+  function updateCustomDurationsFromInputs() {
+    const work = inputCustomWorkMins ? parseInt(inputCustomWorkMins.value, 10) : 25;
+    const shortB = inputCustomShortBreakMins ? parseInt(inputCustomShortBreakMins.value, 10) : 5;
+    const longB = inputCustomLongBreakMins ? parseInt(inputCustomLongBreakMins.value, 10) : 15;
+
+    if (labelCustomWorkMins) labelCustomWorkMins.textContent = `${work} Dk`;
+    if (labelCustomShortBreakMins) labelCustomShortBreakMins.textContent = `${shortB} Dk`;
+    if (labelCustomLongBreakMins) labelCustomLongBreakMins.textContent = `${longB} Dk`;
+
+    pomodoroEngine.setDurations({ workMins: work, shortBreakMins: shortB, longBreakMins: longB });
+    updatePomodoroUI(pomodoroEngine.getState());
+  }
+
+  if (inputCustomWorkMins) inputCustomWorkMins.addEventListener('input', updateCustomDurationsFromInputs);
+  if (inputCustomShortBreakMins) inputCustomShortBreakMins.addEventListener('input', updateCustomDurationsFromInputs);
+  if (inputCustomLongBreakMins) inputCustomLongBreakMins.addEventListener('input', updateCustomDurationsFromInputs);
 
   // Global Keyboard Shortcuts
   window.addEventListener('keydown', handleKeyboardShortcuts);
