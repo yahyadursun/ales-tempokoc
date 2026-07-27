@@ -322,12 +322,12 @@ function updateActiveUI(state) {
   if (overtimeBannerTime) overtimeBannerTime.textContent = `+${formatMMSS(state.overtimeSeconds)} (Toplam: ${formatMMSS(state.currentQuestionElapsed)})`;
 
   if (badgeOvertimeLive) {
-    if (state.isOvertime) badgeOvertimeLive.classList.remove('hidden');
+    if (state.isOvertime && isQuestionTimerVisible) badgeOvertimeLive.classList.remove('hidden');
     else badgeOvertimeLive.classList.add('hidden');
   }
 
   if (overtimeBanner) {
-    if (state.isOvertime) overtimeBanner.classList.remove('hidden');
+    if (state.isOvertime && isQuestionTimerVisible) overtimeBanner.classList.remove('hidden');
     else overtimeBanner.classList.add('hidden');
   }
 
