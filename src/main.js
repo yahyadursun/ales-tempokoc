@@ -34,6 +34,8 @@ const inputTotalQuestions = document.getElementById('input-total-questions');
 const labelTotalQuestions = document.getElementById('label-total-questions');
 const inputTargetSeconds = document.getElementById('input-target-seconds');
 const labelTargetSeconds = document.getElementById('label-target-seconds');
+const inputTotalExamMinutes = document.getElementById('input-total-exam-minutes');
+const labelTotalExamMinutes = document.getElementById('label-total-exam-minutes');
 const toggleAutoAdvance = document.getElementById('toggle-auto-advance');
 const toggleCountdownBeep = document.getElementById('toggle-countdown-beep');
 const toggleVisualFlash = document.getElementById('toggle-visual-flash');
@@ -47,6 +49,8 @@ const activeQProgressbar = document.getElementById('active-q-progressbar');
 const activeSessionElapsed = document.getElementById('active-session-elapsed');
 const activePaceBadge = document.getElementById('active-pace-badge');
 const activePaceText = document.getElementById('active-pace-text');
+const activeTotalExamTimer = document.getElementById('active-total-exam-timer');
+const activeTotalExamProgressbar = document.getElementById('active-total-exam-progressbar');
 
 const displayTimerDigits = document.getElementById('display-timer-digits');
 const displayTargetSec = document.getElementById('display-target-sec');
@@ -167,10 +171,17 @@ function selectPreset(presetKey) {
   inputTargetSeconds.value = p.targetSeconds;
   labelTargetSeconds.textContent = `${p.targetSeconds} Saniye (${formatMMSS(p.targetSeconds)})`;
 
+  if (p.totalExamMinutes && inputTotalExamMinutes) {
+    inputTotalExamMinutes.value = p.totalExamMinutes;
+    if (labelTotalExamMinutes) {
+      labelTotalExamMinutes.textContent = `${p.totalExamMinutes} Dakika (${formatHHMMSS(p.totalExamMinutes * 60)})`;
+    }
+  }
+
   presetTitleBadge.textContent = p.name;
 }
 
-// Format Helper
+// Format Helpers
 function formatMMSS(seconds) {
   const isNeg = seconds < 0;
   const absSec = Math.abs(Math.round(seconds));
@@ -178,6 +189,17 @@ function formatMMSS(seconds) {
   const secs = absSec % 60;
   const str = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   return isNeg ? `-${str}` : str;
+}
+
+function formatHHMMSS(seconds) {
+  const isNeg = seconds < 0;
+  const absSec = Math.abs(Math.round(seconds));
+  const hrs = Math.floor(absSec / 3600);
+  const mins = Math.floor((absSec % 3600) / 60);
+  const secs = absSec % 60;
+
+  const str = `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  return isNeg ? `+${str}` : str;
 }
 
 // View Navigation
@@ -232,6 +254,22 @@ function updateActiveUI(state) {
   activeQProgressbar.style.width = `${progressPct}%`;
 
   activeSessionElapsed.textContent = formatMMSS(state.sessionTotalElapsed);
+
+  // Update Overall Total Exam Timer Widget
+  if (activeTotalExamTimer) {
+    if (state.isTotalExamOvertime) {
+      activeTotalExamTimer.textContent = `+${formatHHMMSS(state.totalExamOvertimeSeconds)}`;
+      activeTotalExamTimer.className = 'font-mono font-black text-rose-400 text-sm sm:text-base animate-pulse';
+    } else {
+      activeTotalExamTimer.textContent = formatHHMMSS(state.totalExamRemainingSeconds);
+      activeTotalExamTimer.className = 'font-mono font-black text-indigo-300 text-sm sm:text-base';
+    }
+  }
+
+  if (activeTotalExamProgressbar) {
+    const pct = Math.max(0, 100 - state.totalExamProgressPercent);
+    activeTotalExamProgressbar.style.width = `${pct}%`;
+  }
 
   // Pace Diff calculation badge
   if (state.totalPaceDiff < -5) {
@@ -554,8 +592,22 @@ function bindEvents() {
       selectPreset('custom');
     }
     const customCardSec = document.getElementById('custom-card-sec');
-    if (customCardSec) customCardSec.textContent = `${val} Sn / Soru`;
+    if (customCardSec) customCardSec.textContent = `${val}s / Soru`;
   });
+
+  if (inputTotalExamMinutes) {
+    inputTotalExamMinutes.addEventListener('input', (e) => {
+      const val = parseInt(e.target.value, 10);
+      if (labelTotalExamMinutes) {
+        labelTotalExamMinutes.textContent = `${val} Dakika (${formatHHMMSS(val * 60)})`;
+      }
+      if (currentPresetKey !== 'custom') {
+        selectPreset('custom');
+      }
+      const customCardQs = document.getElementById('custom-card-qs');
+      if (customCardQs) customCardQs.textContent = `${inputTotalQuestions.value} Soru | ${val} Dk`;
+    });
+  }
 
   // Start Session Button
   btnStartSession.addEventListener('click', startPracticeSession);
@@ -660,12 +712,14 @@ function startPracticeSession() {
 
   const totalQuestions = parseInt(inputTotalQuestions.value, 10);
   const targetSeconds = parseInt(inputTargetSeconds.value, 10);
+  const totalExamMinutes = inputTotalExamMinutes ? parseInt(inputTotalExamMinutes.value, 10) : 75;
 
   // Save selected settings
   currentSettings.presets[currentPresetKey] = {
     ...currentSettings.presets[currentPresetKey],
     totalQuestions,
-    targetSeconds
+    targetSeconds,
+    totalExamMinutes
   };
   currentSettings.preset = currentPresetKey;
   currentSettings.autoAdvanceOnTimeout = toggleAutoAdvance.checked;
@@ -679,6 +733,7 @@ function startPracticeSession() {
   timerEngine.startSession({
     totalQuestions,
     targetSeconds,
+    totalExamMinutes,
     autoAdvanceOnTimeout: toggleAutoAdvance.checked,
     countdownBeepEnabled: toggleCountdownBeep.checked,
   });

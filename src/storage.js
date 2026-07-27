@@ -1,8 +1,8 @@
-// LocalStorage Management for ALES TempoKoç
+// LocalStorage Management for ALES & YÖK Sınavları TempoKoç
 
 const STORAGE_KEYS = {
-  SETTINGS: 'ales_pacer_settings_v1',
-  HISTORY: 'ales_pacer_history_v1',
+  SETTINGS: 'ales_pacer_settings_v2',
+  HISTORY: 'ales_pacer_history_v2',
 };
 
 const DEFAULT_SETTINGS = {
@@ -15,10 +15,15 @@ const DEFAULT_SETTINGS = {
   autoAdvanceDelay: 1.5, // seconds delay before auto-advance
   preset: 'sayisal',
   presets: {
-    sayisal: { name: 'ALES Sayısal', totalQuestions: 50, targetSeconds: 90 },
-    sozel: { name: 'ALES Sözel', totalQuestions: 50, targetSeconds: 60 },
-    esit_agirlik: { name: 'ALES Eşit Ağırlık', totalQuestions: 50, targetSeconds: 75 },
-    custom: { name: 'Özel Deneme / Pratik', totalQuestions: 20, targetSeconds: 60 },
+    sayisal: { name: 'ALES Sayısal', totalQuestions: 50, targetSeconds: 90, totalExamMinutes: 75, category: 'ALES', desc: '50 Soru | 75 Dk Toplam Sınav' },
+    sozel: { name: 'ALES Sözel', totalQuestions: 50, targetSeconds: 60, totalExamMinutes: 75, category: 'ALES', desc: '50 Soru | 75 Dk Toplam Sınav' },
+    esit_agirlik: { name: 'ALES Tam Deneme', totalQuestions: 100, targetSeconds: 90, totalExamMinutes: 150, category: 'ALES', desc: '100 Soru | 150 Dk (2.5 Saat)' },
+    yds: { name: 'YDS (Yabancı Dil Sınavı)', totalQuestions: 80, targetSeconds: 135, totalExamMinutes: 180, category: 'YÖK Dil', desc: '80 Soru | 180 Dk (3 Saat)' },
+    yokdil: { name: 'YÖKDİL', totalQuestions: 80, targetSeconds: 135, totalExamMinutes: 180, category: 'YÖK Dil', desc: '80 Soru | 180 Dk (3 Saat)' },
+    tus: { name: 'TUS (Tıpta Uzmanlık)', totalQuestions: 100, targetSeconds: 81, totalExamMinutes: 135, category: 'Sağlık', desc: '100 Soru | 135 Dk Oturum' },
+    dus: { name: 'DUS (Diş Hekimliği Uzmanlık)', totalQuestions: 120, targetSeconds: 75, totalExamMinutes: 150, category: 'Sağlık', desc: '120 Soru | 150 Dk Oturum' },
+    yks_tyt: { name: 'YKS - TYT', totalQuestions: 120, targetSeconds: 83, totalExamMinutes: 165, category: 'YKS', desc: '120 Soru | 165 Dk (2 Sa 45 Dk)' },
+    custom: { name: 'Özel Mod / Serbest', totalQuestions: 20, targetSeconds: 60, totalExamMinutes: 30, category: 'Özel', desc: 'Özelleştirilebilir Sınav' },
   }
 };
 
@@ -28,7 +33,11 @@ export class StorageManager {
       const data = localStorage.getItem(STORAGE_KEYS.SETTINGS);
       if (!data) return DEFAULT_SETTINGS;
       const parsed = JSON.parse(data);
-      return { ...DEFAULT_SETTINGS, ...parsed, presets: { ...DEFAULT_SETTINGS.presets, ...parsed.presets } };
+      return { 
+        ...DEFAULT_SETTINGS, 
+        ...parsed, 
+        presets: { ...DEFAULT_SETTINGS.presets, ...parsed.presets } 
+      };
     } catch (e) {
       console.warn('Failed to load settings:', e);
       return DEFAULT_SETTINGS;

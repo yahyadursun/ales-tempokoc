@@ -1,10 +1,11 @@
-// ALES Question Pacer Engine
+// ALES & YÖK Sınavları Question Pacer & Genel Sınav Kronometresi Engine
 
 export class TimerEngine {
   constructor() {
     this.status = 'idle'; // 'idle' | 'running' | 'paused' | 'finished'
     this.totalQuestions = 50;
     this.targetSeconds = 90;
+    this.totalExamMinutes = 75;
     this.currentQuestionIndex = 0;
     
     this.currentQuestionElapsed = 0;
@@ -38,6 +39,7 @@ export class TimerEngine {
   startSession(config = {}) {
     this.totalQuestions = config.totalQuestions || 50;
     this.targetSeconds = config.targetSeconds || 90;
+    this.totalExamMinutes = config.totalExamMinutes || Math.ceil((this.totalQuestions * this.targetSeconds) / 60);
     this.autoAdvanceOnTimeout = config.autoAdvanceOnTimeout ?? false;
     this.autoAdvanceDelay = config.autoAdvanceDelay || 1.5;
     this.countdownBeepEnabled = config.countdownBeepEnabled ?? true;
@@ -118,7 +120,7 @@ export class TimerEngine {
       }
     }
 
-    // Check timeout
+    // Check question timeout
     if (this.currentQuestionElapsed >= this.targetSeconds && !this.timeoutTriggeredCurrentQuestion) {
       this.timeoutTriggeredCurrentQuestion = true;
       if (this.callbacks.onTimeout) {
@@ -203,19 +205,22 @@ export class TimerEngine {
     const totalOvertimeSeconds = this.questionLogs.reduce((acc, q) => acc + Math.max(0, q.delta), 0);
     const avgTimePerQuestion = this.questionLogs.length ? (totalSolvedActualSecs / this.questionLogs.length).toFixed(1) : 0;
     
-    const targetTotalTime = this.totalQuestions * this.targetSeconds;
+    const totalExamSeconds = this.totalExamMinutes * 60;
     const paceVariance = (this.sessionTotalElapsed - (this.questionLogs.length * this.targetSeconds)).toFixed(1);
+    const totalExamOvertimeSec = Math.max(0, this.sessionTotalElapsed - totalExamSeconds);
 
     const report = {
       totalQuestions: this.totalQuestions,
       questionsAttempted: this.questionLogs.length,
       targetSeconds: this.targetSeconds,
+      totalExamMinutes: this.totalExamMinutes,
+      totalExamSeconds,
       sessionTotalElapsed: parseFloat(this.sessionTotalElapsed.toFixed(1)),
-      targetTotalTime,
       solvedCount,
       skippedCount,
       timeoutCount,
       totalOvertimeSeconds: parseFloat(totalOvertimeSeconds.toFixed(1)),
+      totalExamOvertimeSec: parseFloat(totalExamOvertimeSec.toFixed(1)),
       avgTimePerQuestion: parseFloat(avgTimePerQuestion),
       paceVariance: parseFloat(paceVariance),
       questionLogs: [...this.questionLogs],
@@ -242,6 +247,11 @@ export class TimerEngine {
     const overtimeSeconds = Math.max(0, this.currentQuestionElapsed - this.targetSeconds);
     const progressPercent = Math.min(100, (this.currentQuestionElapsed / this.targetSeconds) * 100);
     
+    const totalExamSeconds = this.totalExamMinutes * 60;
+    const totalExamRemainingSeconds = Math.max(0, totalExamSeconds - this.sessionTotalElapsed);
+    const totalExamOvertimeSeconds = Math.max(0, this.sessionTotalElapsed - totalExamSeconds);
+    const totalExamProgressPercent = Math.min(100, (this.sessionTotalElapsed / totalExamSeconds) * 100);
+
     // Total pace calculation (Are we ahead or behind cumulative target?)
     const expectedElapsed = (this.currentQuestionIndex) * this.targetSeconds;
     const currentLoggedElapsed = this.questionLogs.reduce((acc, q) => acc + q.actualSeconds, 0);
@@ -252,6 +262,12 @@ export class TimerEngine {
       currentQuestionNum: this.currentQuestionIndex + 1,
       totalQuestions: this.totalQuestions,
       targetSeconds: this.targetSeconds,
+      totalExamMinutes: this.totalExamMinutes,
+      totalExamSeconds,
+      totalExamRemainingSeconds: parseFloat(totalExamRemainingSeconds.toFixed(1)),
+      totalExamOvertimeSeconds: parseFloat(totalExamOvertimeSeconds.toFixed(1)),
+      totalExamProgressPercent: parseFloat(totalExamProgressPercent.toFixed(1)),
+      isTotalExamOvertime: this.sessionTotalElapsed > totalExamSeconds,
       currentQuestionElapsed: parseFloat(this.currentQuestionElapsed.toFixed(1)),
       remainingSeconds: parseFloat(remainingSeconds.toFixed(1)),
       overtimeSeconds: parseFloat(overtimeSeconds.toFixed(1)),
