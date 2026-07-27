@@ -64,6 +64,11 @@
 
           <!-- Action Controls Header -->
           <div class="flex items-center gap-2 sm:gap-3">
+            <button id="btn-open-analytics" class="p-2.5 rounded-xl bg-slate-800/70 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/50 transition flex items-center gap-2 text-sm font-medium" title="Gelişim Analizleri">
+              <span>📈</span>
+              <span class="hidden md:inline">Gelişim Analizleri</span>
+            </button>
+
             <button id="btn-mute-toggle" class="p-2.5 rounded-xl bg-slate-800/70 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/50 transition flex items-center gap-2 text-sm font-medium" title="Sesi Aç/Kapat">
               <span id="icon-audio">🔊</span>
               <span class="hidden md:inline" id="label-audio">Ses Açık</span>
@@ -815,7 +820,41 @@
 
             <!-- RIGHT COLUMN: ⏱️ POMODORO FOCUS TIMER (5 cols) -->
             <div class="lg:col-span-5 space-y-6">
-              <div class="bg-slate-900/90 rounded-3xl p-6 border border-slate-800 shadow-2xl backdrop-blur-2xl flex flex-col items-center justify-between text-center space-y-6 relative overflow-hidden">
+              
+              <!-- Customization Toolbar (Themes & Clock Styles) -->
+              <div class="bg-slate-900/80 rounded-3xl p-4 border border-slate-800 shadow-xl backdrop-blur-xl space-y-3">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                    🎨 Özelleştirici (Tema & Saat Modelleri)
+                  </span>
+                </div>
+
+                <!-- Clock Styles Selector -->
+                <div class="space-y-1">
+                  <span class="text-[11px] text-slate-400 font-semibold">⏰ Saat Modeli Seçin:</span>
+                  <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-[11px] font-semibold" id="clock-style-selector">
+                    <button data-clock-style="neon" class="clock-style-btn active p-2 rounded-xl bg-emerald-600 text-white transition cursor-pointer">⭕ Neon Ring</button>
+                    <button data-clock-style="minimal" class="clock-style-btn p-2 rounded-xl bg-slate-950 text-slate-300 hover:bg-slate-800 border border-slate-800 transition cursor-pointer">🔲 Minimal</button>
+                    <button data-clock-style="hourglass" class="clock-style-btn p-2 rounded-xl bg-slate-950 text-slate-300 hover:bg-slate-800 border border-slate-800 transition cursor-pointer">⏳ Kum Saati</button>
+                    <button data-clock-style="flip" class="clock-style-btn p-2 rounded-xl bg-slate-950 text-slate-300 hover:bg-slate-800 border border-slate-800 transition cursor-pointer">🔢 Retro Flip</button>
+                  </div>
+                </div>
+
+                <!-- Background Atmospheres -->
+                <div class="space-y-1 pt-1 border-t border-slate-800/60">
+                  <span class="text-[11px] text-slate-400 font-semibold">🌌 Arka Plan Atmosferi:</span>
+                  <div class="flex items-center gap-1.5 overflow-x-auto pb-1 custom-scrollbar text-[11px] font-semibold" id="theme-selector">
+                    <button data-theme="slate" class="theme-btn active px-2.5 py-1.5 rounded-xl bg-slate-800 text-white border border-slate-700 transition cursor-pointer flex-shrink-0">🌃 Derin Gece</button>
+                    <button data-theme="cyberpunk" class="theme-btn px-2.5 py-1.5 rounded-xl bg-pink-950 text-pink-300 border border-pink-800/50 hover:bg-pink-900 transition cursor-pointer flex-shrink-0">🌆 Siberpunk</button>
+                    <button data-theme="lofi" class="theme-btn px-2.5 py-1.5 rounded-xl bg-amber-950 text-amber-300 border border-amber-800/50 hover:bg-amber-900 transition cursor-pointer flex-shrink-0">☕ Lo-Fi Kahve</button>
+                    <button data-theme="zen" class="theme-btn px-2.5 py-1.5 rounded-xl bg-emerald-950 text-emerald-300 border border-emerald-800/50 hover:bg-emerald-900 transition cursor-pointer flex-shrink-0">🌲 Zen Forest</button>
+                    <button data-theme="sunset" class="theme-btn px-2.5 py-1.5 rounded-xl bg-rose-950 text-rose-300 border border-rose-800/50 hover:bg-rose-900 transition cursor-pointer flex-shrink-0">🌅 Gün Batımı</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Main Pomodoro Card -->
+              <div class="bg-slate-900/90 rounded-3xl p-6 border border-slate-800 shadow-2xl backdrop-blur-2xl flex flex-col items-center justify-between text-center space-y-6 relative overflow-hidden" id="pomo-clock-container">
                 
                 <!-- Selected Task Header Ribbon -->
                 <div class="w-full bg-slate-950/80 p-3 rounded-2xl border border-slate-800/80 text-left space-y-1">
@@ -832,8 +871,8 @@
                   <button data-phase="longBreak" class="pomo-phase-btn flex-1 py-2 rounded-xl text-slate-400 hover:text-white transition cursor-pointer">🌴 Uzun Mola</button>
                 </div>
 
-                <!-- SVG Circular Ring & Big Digital Timer -->
-                <div class="relative w-60 h-60 flex items-center justify-center my-2">
+                <!-- SVG Circular Ring & Big Digital Timer (Default Neon Ring Style) -->
+                <div class="pomo-visual-ring-wrapper relative w-60 h-60 flex items-center justify-center my-2">
                   <svg class="w-full h-full transform -rotate-90 drop-shadow-2xl" viewBox="0 0 200 200">
                     <circle cx="100" cy="100" r="84" class="stroke-slate-800" stroke-width="12" fill="transparent"/>
                     <circle id="pomo-ring-circle" cx="100" cy="100" r="84" class="stroke-rose-500 transition-all duration-150" stroke-width="12" stroke-dasharray="527.78" stroke-dashoffset="0" stroke-linecap="round" fill="transparent"/>
@@ -848,6 +887,42 @@
                       Pomodoro #1
                     </span>
                   </div>
+                </div>
+
+                <!-- Style 2: Minimal Container -->
+                <div class="pomo-minimal-container hidden flex-col items-center justify-center space-y-2 py-8 my-2">
+                  <span class="pomo-phase-label-alt text-xs font-bold uppercase tracking-wider text-rose-400">ODAKLANMA ZAMANI</span>
+                  <div class="pomo-display-digits-alt font-mono font-black text-7xl tracking-tighter text-white drop-shadow-xl">
+                    25:00
+                  </div>
+                  <span class="pomo-cycles-badge-alt px-3 py-1 rounded-full bg-slate-800 text-slate-300 font-mono text-xs border border-slate-700">
+                    Pomodoro #1
+                  </span>
+                </div>
+
+                <!-- Style 3: Hourglass Progress Container -->
+                <div class="pomo-hourglass-container hidden flex-col items-center justify-center space-y-4 w-full py-6 my-2">
+                  <div class="text-4xl animate-bounce">⏳</div>
+                  <span class="pomo-phase-label-alt text-xs font-bold uppercase tracking-wider text-rose-400">ODAKLANMA ZAMANI</span>
+                  <div class="pomo-display-digits-alt font-mono font-black text-6xl tracking-tight text-white">
+                    25:00
+                  </div>
+                  <div class="w-full bg-slate-950 h-3 rounded-full overflow-hidden border border-slate-800">
+                    <div id="pomo-hourglass-progressbar" class="bg-rose-500 h-full w-full transition-all duration-300"></div>
+                  </div>
+                </div>
+
+                <!-- Style 4: Retro Flip Clock Container -->
+                <div class="pomo-flip-container hidden flex-col items-center justify-center space-y-3 py-6 my-2">
+                  <span class="pomo-phase-label-alt text-xs font-bold uppercase tracking-wider text-rose-400">RETRO FLIP CLOCK</span>
+                  <div class="flex items-center gap-2 font-mono font-black text-5xl text-white">
+                    <div class="px-4 py-3 rounded-2xl bg-slate-950 border-2 border-slate-800 shadow-2xl" id="flip-mins">25</div>
+                    <span class="text-rose-500 animate-pulse">:</span>
+                    <div class="px-4 py-3 rounded-2xl bg-slate-950 border-2 border-slate-800 shadow-2xl" id="flip-secs">00</div>
+                  </div>
+                  <span class="pomo-cycles-badge-alt px-3 py-1 rounded-full bg-slate-800 text-slate-300 font-mono text-xs border border-slate-700">
+                    Pomodoro #1
+                  </span>
                 </div>
 
                 <!-- Action Controls Deck -->
@@ -982,6 +1057,79 @@
             🗑️ Geçmişi Temizle
           </button>
           <button id="btn-close-history-modal" class="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs cursor-pointer">
+            Kapat
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ANALYTICS PROGRESS MODAL (DAY / MONTH / YEAR) -->
+    <div id="modal-analytics" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md animate-fade-in">
+      <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-4xl w-full p-6 space-y-6 shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+          <div>
+            <h3 class="font-outfit font-bold text-xl text-white flex items-center gap-2">
+              <span>📊</span> Gelişim Takip & Zaman Analizleri
+            </h3>
+            <p class="text-xs text-slate-400 mt-0.5">Günlük, Aylık ve Yıllık bazda çalışma performansınızı takip edin</p>
+          </div>
+          <button id="btn-close-analytics" class="text-slate-400 hover:text-white p-1 rounded-lg text-lg">✕</button>
+        </div>
+
+        <!-- Period Tabs & Streak Header -->
+        <div class="flex flex-wrap items-center justify-between gap-4 bg-slate-950 p-2 rounded-2xl border border-slate-800">
+          <div class="flex items-center gap-1.5 text-xs font-bold" id="analytics-period-tabs">
+            <button data-period="daily" class="analytics-tab active px-4 py-2 rounded-xl bg-emerald-600 text-white transition cursor-pointer">📅 Günlük</button>
+            <button data-period="monthly" class="analytics-tab px-4 py-2 rounded-xl text-slate-400 hover:text-white transition cursor-pointer">📆 Aylık</button>
+            <button data-period="yearly" class="analytics-tab px-4 py-2 rounded-xl text-slate-400 hover:text-white transition cursor-pointer">📊 Yıllık</button>
+          </div>
+
+          <!-- Streak Counter Badge -->
+          <div class="px-3.5 py-1.5 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold text-xs flex items-center gap-2">
+            <span class="text-base">🔥</span>
+            <span>Aralıksız Çalışma Serisi: <span id="stat-streak-count" class="font-mono text-white text-sm">0 Gün</span></span>
+          </div>
+        </div>
+
+        <!-- Metric Summary Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="bg-slate-950/70 p-4 rounded-2xl border border-slate-800 space-y-1">
+            <span class="text-xs text-slate-400 font-medium">Seçili Dönem Toplam Süre</span>
+            <div id="analytics-total-time" class="text-2xl font-outfit font-black text-emerald-400 font-mono">00:00:00</div>
+          </div>
+
+          <div class="bg-slate-950/70 p-4 rounded-2xl border border-slate-800 space-y-1">
+            <span class="text-xs text-slate-400 font-medium">Toplam Oturum / Görev</span>
+            <div id="analytics-logs-count" class="text-2xl font-outfit font-black text-indigo-400 font-mono">0 Oturum</div>
+          </div>
+
+          <div class="bg-slate-950/70 p-4 rounded-2xl border border-slate-800 space-y-1">
+            <span class="text-xs text-slate-400 font-medium">En Çok Çalışılan Ders</span>
+            <div id="analytics-top-subject" class="text-xl font-outfit font-bold text-amber-300 truncate">Henüz Veri Yok</div>
+          </div>
+        </div>
+
+        <!-- Charts Grid (Period Bar Chart + Subject Doughnut Chart) -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <!-- Time Trend Chart -->
+          <div class="lg:col-span-8 bg-slate-950/80 p-5 rounded-2xl border border-slate-800 space-y-3">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300" id="label-period-chart">Çalışma Süresi Trendi</h4>
+            <div class="relative w-full h-64">
+              <canvas id="chart-period-trend"></canvas>
+            </div>
+          </div>
+
+          <!-- Subject Distribution Doughnut Chart -->
+          <div class="lg:col-span-4 bg-slate-950/80 p-5 rounded-2xl border border-slate-800 space-y-3">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300">Ders Bazlı Dağılım</h4>
+            <div class="relative w-full h-64 flex items-center justify-center">
+              <canvas id="chart-subject-distribution"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-end pt-2 border-t border-slate-800">
+          <button id="btn-close-analytics-modal" class="px-6 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs cursor-pointer">
             Kapat
           </button>
         </div>

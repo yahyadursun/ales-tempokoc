@@ -1,4 +1,4 @@
-// LocalStorage Management for TempoKoç (Sınav Pacer & Focus To-Do)
+// LocalStorage Management for TempoKoç (Sınav Pacer, Focus To-Do, & Progress Analytics)
 
 const STORAGE_KEYS = {
   SETTINGS: 'ales_pacer_settings_v2',
@@ -6,6 +6,9 @@ const STORAGE_KEYS = {
   TASKS: 'tempokoc_tasks_v1',
   POMODORO_SETTINGS: 'tempokoc_pomodoro_settings_v1',
   DAILY_STATS: 'tempokoc_daily_stats_v1',
+  STUDY_LOGS: 'tempokoc_study_logs_v1',
+  THEME_PREF: 'tempokoc_theme_pref_v1',
+  CLOCK_STYLE_PREF: 'tempokoc_clock_style_pref_v1',
 };
 
 const DEFAULT_SETTINGS = {
@@ -87,6 +90,14 @@ export class StorageManager {
       history.unshift(newSession);
       if (history.length > 100) history.pop();
       localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(history));
+
+      // Also record to study logs for progress analytics!
+      this.recordStudyLog({
+        subject: sessionData.presetName || 'Sınav Denemesi',
+        durationSec: sessionData.sessionTotalElapsed || 0,
+        type: 'exam'
+      });
+
       return newSession;
     } catch (e) {
       console.error('Failed to save session:', e);
@@ -116,7 +127,6 @@ export class StorageManager {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.TASKS);
       if (!data) {
-        // Initial sample tasks for user
         const sampleTasks = [
           { id: 'task_1', title: 'Matematik - Üslü Sayılar 30 Soru', subject: 'Matematik', estPomodoros: 2, donePomodoros: 1, completed: false },
           { id: 'task_2', title: 'Paragraf Çözümü (ALES Sözel)', subject: 'Türkçe', estPomodoros: 3, donePomodoros: 3, completed: true },
@@ -185,7 +195,130 @@ export class StorageManager {
     return tasks;
   }
 
-  // --- POMODORO SETTINGS & DAILY STATS ---
+  // --- STUDY LOGS & PROGRESS ANALYTICS ---
+  static getStudyLogs() {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.STUDY_LOGS);
+      return data ? JSON.parse(data) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  static recordStudyLog({ subject = 'Genel', durationSec = 1500, type = 'pomodoro', taskId = null }) {
+    try {
+      const logs = this.getStudyLogs();
+      const now = new Date();
+      const dateStr = now.toISOString().split('T')[0];
+      
+      const newLog = {
+        id: 'log_' + Date.now(),
+        timestamp: now.toISOString(),
+        date: dateStr,
+        year: now.getFullYear(),
+        month: now.getMonth() + 1,
+        day: now.getDate(),
+        hour: now.getHours(),
+        subject,
+        durationSec,
+        type,
+        taskId
+      };
+
+      logs.unshift(newLog);
+      if (logs.length > 1000) logs.pop(); // Keep up to 1000 logs
+      localStorage.setItem(STORAGE_KEYS.STUDY_LOGS, JSON.stringify(logs));
+
+      this.recordFocusTime(durationSec);
+      return newLog;
+    } catch (e) {
+      console.error('Failed to record study log:', e);
+      return null;
+    }
+  }
+
+  static getStreakCount() {
+    const logs = this.getStudyLogs();
+    if (logs.length === 0) return 0;
+
+    const dates = Array.from(new Set(logs.map(l => l.date))).sort().reverse();
+    const today = new Date().toISOString().split('T')[0];
+    const yesterdayDate = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+
+    if (!dates.includes(today) && !dates.includes(yesterdayDate)) {
+      return 0; // Streak broken
+    }
+
+    let streak = 0;
+    let checkDate = dates.includes(today) ? new Date(today) : new Date(yesterdayDate);
+
+    while (true) {
+      const checkStr = checkDate.toISOString().split('T')[0];
+      if (dates.includes(checkStr)) {
+        streak++;
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else {
+        break;
+      }
+    }
+
+    return streak;
+  }
+
+  static getDailyAnalytics(dateStr) {
+    const targetDate = dateStr || new Date().toISOString().split('T')[0];
+    const logs = this.getStudyLogs().filter(l => l.date === targetDate);
+    
+    let totalSec = 0;
+    const subjectMap = {};
+
+    logs.forEach(l => {
+      totalSec += l.durationSec;
+      subjectMap[l.subject] = (subjectMap[l.subject] || 0) + l.durationSec;
+    });
+
+    return { date: targetDate, totalSec, logsCount: logs.length, subjectMap };
+  }
+
+  static getMonthlyAnalytics(year, month) {
+    const now = new Date();
+    const targetYear = year || now.getFullYear();
+    const targetMonth = month || (now.getMonth() + 1);
+
+    const logs = this.getStudyLogs().filter(l => l.year === targetYear && l.month === targetMonth);
+
+    const daysInMonth = new Date(targetYear, targetMonth, 0).getDate();
+    const dailyTotals = Array(daysInMonth).fill(0);
+    const subjectMap = {};
+    let totalSec = 0;
+
+    logs.forEach(l => {
+      totalSec += l.durationSec;
+      dailyTotals[l.day - 1] += l.durationSec;
+      subjectMap[l.subject] = (subjectMap[l.subject] || 0) + l.durationSec;
+    });
+
+    return { year: targetYear, month: targetMonth, daysInMonth, dailyTotals, totalSec, subjectMap };
+  }
+
+  static getYearlyAnalytics(year) {
+    const targetYear = year || new Date().getFullYear();
+    const logs = this.getStudyLogs().filter(l => l.year === targetYear);
+
+    const monthlyTotals = Array(12).fill(0);
+    const subjectMap = {};
+    let totalSec = 0;
+
+    logs.forEach(l => {
+      totalSec += l.durationSec;
+      monthlyTotals[l.month - 1] += l.durationSec;
+      subjectMap[l.subject] = (subjectMap[l.subject] || 0) + l.durationSec;
+    });
+
+    return { year: targetYear, monthlyTotals, totalSec, subjectMap };
+  }
+
+  // --- POMODORO SETTINGS & THEMES ---
   static getPomodoroSettings() {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.POMODORO_SETTINGS);
@@ -231,5 +364,21 @@ export class StorageManager {
       console.error('Failed to record focus time:', e);
       return null;
     }
+  }
+
+  static getThemePreference() {
+    return localStorage.getItem(STORAGE_KEYS.THEME_PREF) || 'slate';
+  }
+
+  static saveThemePreference(themeName) {
+    localStorage.setItem(STORAGE_KEYS.THEME_PREF, themeName);
+  }
+
+  static getClockStylePreference() {
+    return localStorage.getItem(STORAGE_KEYS.CLOCK_STYLE_PREF) || 'neon';
+  }
+
+  static saveClockStylePreference(styleName) {
+    localStorage.setItem(STORAGE_KEYS.CLOCK_STYLE_PREF, styleName);
   }
 }

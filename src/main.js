@@ -1,4 +1,4 @@
-// TempoKoç — Main Controller & Twin Timers Engine (Exam Pacer & Focus To-Do)
+// TempoKoç — Main Controller & Twin Timers Engine (Exam Pacer, Focus To-Do, & Progress Analytics)
 import { soundEngine } from './audio.js';
 import { StorageManager } from './storage.js';
 import { TimerEngine } from './timer.js';
@@ -56,6 +56,16 @@ const btnCloseHistoryModal = document.getElementById('btn-close-history-modal');
 const modalHistory = document.getElementById('modal-history');
 const historyListContainer = document.getElementById('history-list-container');
 const btnClearHistory = document.getElementById('btn-clear-history');
+
+// Analytics Modal Controls
+const btnOpenAnalytics = document.getElementById('btn-open-analytics');
+const btnCloseAnalytics = document.getElementById('btn-close-analytics');
+const btnCloseAnalyticsModal = document.getElementById('btn-close-analytics-modal');
+const modalAnalytics = document.getElementById('modal-analytics');
+const analyticsPeriodTabs = document.querySelectorAll('#analytics-period-tabs .analytics-tab');
+let currentAnalyticsPeriod = 'daily';
+let trendChartInstance = null;
+let subjectChartInstance = null;
 
 // Setup Inputs (Exam Mode)
 const inputTotalQuestions = document.getElementById('input-total-questions');
@@ -153,6 +163,9 @@ const labelPomoStart = document.getElementById('label-pomo-start');
 const btnPomoSkip = document.getElementById('btn-pomo-skip');
 const btnPomoReset = document.getElementById('btn-pomo-reset');
 
+const themeBtns = document.querySelectorAll('#theme-selector .theme-btn');
+const clockStyleBtns = document.querySelectorAll('#clock-style-selector .clock-style-btn');
+
 const statTodayFocusTime = document.getElementById('stat-today-focus-time');
 const statTodayPomodoros = document.getElementById('stat-today-pomodoros');
 const statTodayTasks = document.getElementById('stat-today-tasks');
@@ -175,6 +188,13 @@ function initApp() {
   renderHistoryList();
   renderTasks();
   updateDailyStatsUI();
+
+  // Load Theme & Clock preferences
+  const savedTheme = StorageManager.getThemePreference();
+  setTheme(savedTheme);
+
+  const savedClockStyle = StorageManager.getClockStylePreference();
+  setClockStyle(savedClockStyle);
 
   // Notification permission lazy prompt
   if ('Notification' in window && Notification.permission === 'default') {
@@ -203,8 +223,38 @@ function applyLoadedSettings() {
   if (toggleCountdownBeep) toggleCountdownBeep.checked = currentSettings.countdownBeep;
   if (toggleVisualFlash) toggleVisualFlash.checked = currentSettings.visualFlash;
 
-  // Set active preset for Exam Mode
   selectPreset(currentSettings.preset || 'sayisal');
+}
+
+function setTheme(themeName) {
+  document.body.className = `theme-${themeName} bg-slate-950 text-slate-100 font-sans antialiased min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white`;
+  StorageManager.saveThemePreference(themeName);
+
+  themeBtns.forEach(btn => {
+    if (btn.dataset.theme === themeName) {
+      btn.className = 'theme-btn active px-2.5 py-1.5 rounded-xl bg-slate-800 text-white border border-slate-700 transition cursor-pointer flex-shrink-0 font-bold';
+    } else {
+      btn.className = 'theme-btn px-2.5 py-1.5 rounded-xl bg-slate-950/70 text-slate-400 border border-slate-800 hover:bg-slate-900 transition cursor-pointer flex-shrink-0';
+    }
+  });
+}
+
+function setClockStyle(styleName) {
+  const container = document.getElementById('pomo-clock-container');
+  if (container) {
+    container.className = `clock-style-${styleName} bg-slate-900/90 rounded-3xl p-6 border border-slate-800 shadow-2xl backdrop-blur-2xl flex flex-col items-center justify-between text-center space-y-6 relative overflow-hidden`;
+  }
+  StorageManager.saveClockStylePreference(styleName);
+
+  clockStyleBtns.forEach(btn => {
+    if (btn.dataset.clockStyle === styleName) {
+      btn.className = 'clock-style-btn active p-2 rounded-xl bg-emerald-600 text-white transition cursor-pointer font-bold';
+    } else {
+      btn.className = 'clock-style-btn p-2 rounded-xl bg-slate-950 text-slate-300 hover:bg-slate-800 border border-slate-800 transition cursor-pointer';
+    }
+  });
+
+  updatePomodoroUI(pomodoroEngine.getState());
 }
 
 function updateAudioBtnUI() {
@@ -338,7 +388,14 @@ function setupPomodoroCallbacks() {
       }
     },
     onWorkComplete: (workSec, task) => {
-      StorageManager.recordFocusTime(workSec);
+      const subject = task ? task.subject : 'Genel Odaklanma';
+      StorageManager.recordStudyLog({
+        subject,
+        durationSec: workSec,
+        type: 'pomodoro',
+        taskId: task ? task.id : null
+      });
+
       if (task) {
         StorageManager.incrementTaskPomodoro(task.id);
         renderTasks(currentTaskFilter);
@@ -490,17 +547,36 @@ function updateActiveUI(state) {
   }
 }
 
-// Update Pomodoro UI
+// Update Pomodoro UI (Supports all clock styles & flip clock)
 function updatePomodoroUI(state) {
-  if (pomoDisplayDigits) {
-    pomoDisplayDigits.textContent = formatMMSS(state.remainingSeconds);
+  const formattedMMSS = formatMMSS(state.remainingSeconds);
+
+  if (pomoDisplayDigits) pomoDisplayDigits.textContent = formattedMMSS;
+
+  document.querySelectorAll('.pomo-display-digits-alt').forEach(el => {
+    el.textContent = formattedMMSS;
+  });
+
+  // Flip Clock digits
+  const minsStr = Math.floor(state.remainingSeconds / 60).toString().padStart(2, '0');
+  const secsStr = (state.remainingSeconds % 60).toString().padStart(2, '0');
+  const flipMins = document.getElementById('flip-mins');
+  const flipSecs = document.getElementById('flip-secs');
+  if (flipMins) flipMins.textContent = minsStr;
+  if (flipSecs) flipSecs.textContent = secsStr;
+
+  // Hourglass bar
+  const hourglassBar = document.getElementById('pomo-hourglass-progressbar');
+  if (hourglassBar) {
+    const pct = Math.max(0, 100 - state.progressPercent);
+    hourglassBar.style.width = `${pct}%`;
   }
 
-  if (pomoCyclesBadge) {
-    pomoCyclesBadge.textContent = `Pomodoro #${state.completedWorkCycles + 1}`;
-  }
+  if (pomoCyclesBadge) pomoCyclesBadge.textContent = `Pomodoro #${state.completedWorkCycles + 1}`;
+  document.querySelectorAll('.pomo-cycles-badge-alt').forEach(el => {
+    el.textContent = `Pomodoro #${state.completedWorkCycles + 1}`;
+  });
 
-  // Phase labels and ring colors
   pomoPhaseBtns.forEach(btn => {
     if (btn.dataset.phase === state.phase) {
       if (state.phase === 'work') {
@@ -513,18 +589,9 @@ function updatePomodoroUI(state) {
     }
   });
 
-  if (pomoPhaseLabel) {
-    if (state.phase === 'work') {
-      pomoPhaseLabel.textContent = 'ODAKLANMA ZAMANI 🍅';
-      pomoPhaseLabel.className = 'text-xs font-bold uppercase tracking-wider text-rose-400';
-    } else if (state.phase === 'shortBreak') {
-      pomoPhaseLabel.textContent = 'KISA MOLA ZAMANI ☕';
-      pomoPhaseLabel.className = 'text-xs font-bold uppercase tracking-wider text-teal-400';
-    } else {
-      pomoPhaseLabel.textContent = 'UZUN MOLA ZAMANI 🌴';
-      pomoPhaseLabel.className = 'text-xs font-bold uppercase tracking-wider text-emerald-400';
-    }
-  }
+  const phaseTitle = state.phase === 'work' ? 'ODAKLANMA ZAMANI 🍅' : (state.phase === 'shortBreak' ? 'KISA MOLA ZAMANI ☕' : 'UZUN MOLA ZAMANI 🌴');
+  if (pomoPhaseLabel) pomoPhaseLabel.textContent = phaseTitle;
+  document.querySelectorAll('.pomo-phase-label-alt').forEach(el => el.textContent = phaseTitle);
 
   if (pomoRingCircle) {
     const totalLength = 527.78;
@@ -538,7 +605,6 @@ function updatePomodoroUI(state) {
     }
   }
 
-  // Start button icon/label
   if (labelPomoStart && iconPomoStart) {
     if (state.status === 'running') {
       iconPomoStart.textContent = '⏸️';
@@ -550,6 +616,128 @@ function updatePomodoroUI(state) {
       iconPomoStart.textContent = '▶️';
       labelPomoStart.textContent = state.phase === 'work' ? 'ODAKLANMAYI BAŞLAT' : 'MOLAYI BAŞLAT';
     }
+  }
+}
+
+// Render Analytics Progress Charts (Day / Month / Year)
+function renderAnalyticsCharts(period = 'daily') {
+  currentAnalyticsPeriod = period;
+  if (!modalAnalytics) return;
+
+  analyticsPeriodTabs.forEach(tab => {
+    if (tab.dataset.period === period) {
+      tab.className = 'analytics-tab active px-4 py-2 rounded-xl bg-emerald-600 text-white transition cursor-pointer font-bold';
+    } else {
+      tab.className = 'analytics-tab px-4 py-2 rounded-xl text-slate-400 hover:text-white transition cursor-pointer';
+    }
+  });
+
+  const streakCount = StorageManager.getStreakCount();
+  const statStreakCount = document.getElementById('stat-streak-count');
+  if (statStreakCount) statStreakCount.textContent = `${streakCount} Gün 🔥`;
+
+  let analyticsData;
+  let labels = [];
+  let valuesInMinutes = [];
+  let periodLabel = '';
+
+  if (period === 'daily') {
+    const todayStr = new Date().toISOString().split('T')[0];
+    analyticsData = StorageManager.getDailyAnalytics(todayStr);
+    labels = ['Bugün'];
+    valuesInMinutes = [(analyticsData.totalSec / 60).toFixed(1)];
+    periodLabel = 'Bugünkü Çalışma (Dakika)';
+  } else if (period === 'monthly') {
+    analyticsData = StorageManager.getMonthlyAnalytics();
+    labels = Array.from({ length: analyticsData.daysInMonth }, (_, i) => `${i + 1}`);
+    valuesInMinutes = analyticsData.dailyTotals.map(sec => (sec / 60).toFixed(1));
+    periodLabel = 'Bu Ay Gün Gün Çalışma (Dakika)';
+  } else if (period === 'yearly') {
+    analyticsData = StorageManager.getYearlyAnalytics();
+    labels = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+    valuesInMinutes = analyticsData.monthlyTotals.map(sec => (sec / 3600).toFixed(1));
+    periodLabel = 'Bu Yıl Ay Ay Çalışma (Saat)';
+  }
+
+  const totalTimeEl = document.getElementById('analytics-total-time');
+  const logsCountEl = document.getElementById('analytics-logs-count');
+  const topSubjectEl = document.getElementById('analytics-top-subject');
+  const labelPeriodChart = document.getElementById('label-period-chart');
+
+  if (labelPeriodChart) labelPeriodChart.textContent = periodLabel;
+  if (totalTimeEl) totalTimeEl.textContent = formatHHMMSS(analyticsData.totalSec || 0);
+  if (logsCountEl) logsCountEl.textContent = `${analyticsData.logsCount || (analyticsData.dailyTotals ? analyticsData.dailyTotals.filter(v => v > 0).length : 0)} Oturum`;
+
+  let topSub = 'Henüz Veri Yok';
+  let maxTime = 0;
+  if (analyticsData.subjectMap) {
+    Object.keys(analyticsData.subjectMap).forEach(sub => {
+      if (analyticsData.subjectMap[sub] > maxTime) {
+        maxTime = analyticsData.subjectMap[sub];
+        topSub = sub;
+      }
+    });
+  }
+  if (topSubjectEl) topSubjectEl.textContent = topSub;
+
+  // Chart 1: Trend Bar Chart
+  const trendCanvas = document.getElementById('chart-period-trend');
+  if (trendCanvas) {
+    if (trendChartInstance) trendChartInstance.destroy();
+    trendChartInstance = new Chart(trendCanvas, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: periodLabel,
+          data: valuesInMinutes,
+          backgroundColor: 'rgba(16, 185, 129, 0.8)',
+          borderRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { labels: { color: '#94a3b8' } }
+        },
+        scales: {
+          x: { ticks: { color: '#64748b' }, grid: { color: 'rgba(51, 65, 85, 0.2)' } },
+          y: { beginAtZero: true, ticks: { color: '#64748b' }, grid: { color: 'rgba(51, 65, 85, 0.2)' } }
+        }
+      }
+    });
+  }
+
+  // Chart 2: Subject Doughnut Chart
+  const subjectCanvas = document.getElementById('chart-subject-distribution');
+  if (subjectCanvas) {
+    if (subjectChartInstance) subjectChartInstance.destroy();
+    const subjectLabels = Object.keys(analyticsData.subjectMap || {});
+    const subjectValues = subjectLabels.map(k => (analyticsData.subjectMap[k] / 60).toFixed(1));
+
+    if (subjectLabels.length === 0) {
+      subjectLabels.push('Henüz Veri Yok');
+      subjectValues.push(1);
+    }
+
+    subjectChartInstance = new Chart(subjectCanvas, {
+      type: 'doughnut',
+      data: {
+        labels: subjectLabels,
+        datasets: [{
+          data: subjectValues,
+          backgroundColor: ['#10b981', '#818cf8', '#f59e0b', '#ec4899', '#06b6d4', '#64748b']
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 10 } } }
+        }
+      }
+    });
   }
 }
 
@@ -643,7 +831,6 @@ function renderTasks(filter = 'all') {
 function updateDailyStatsUI() {
   const stats = StorageManager.getDailyStats();
   const tasks = StorageManager.getTasks();
-
   const completedTasks = tasks.filter(t => t.completed).length;
 
   if (statTodayFocusTime) statTodayFocusTime.textContent = formatHHMMSS(stats.totalWorkSec || 0);
@@ -727,7 +914,6 @@ function showResultsView(report) {
     resultsSummarySubtitle.textContent = `Toplam ${report.totalQuestions} soruluk testi ${formatMMSS(report.sessionTotalElapsed)} sürede tamamladınız. Ortalama soru başına harcanan süre ${report.avgTimePerQuestion} saniye.`;
   }
 
-  // Render Table Rows
   if (tableResultsBody) {
     tableResultsBody.innerHTML = report.questionLogs.map(log => {
       let statusBadge = '<span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-semibold">✓ Zamanında</span>';
@@ -762,7 +948,7 @@ function showResultsView(report) {
   }
 }
 
-// Render Interactive Chart.js Visualization
+// Render Interactive Chart.js Visualization (Results)
 function renderResultsChart(report) {
   const canvas = document.getElementById('results-chart');
   if (!canvas) return;
@@ -872,7 +1058,7 @@ function renderHistoryList() {
             <div class="font-bold text-emerald-400">%${onTimePct} Zamanında</div>
             <div class="text-slate-500">Ort. ${item.avgTimePerQuestion}s/soru</div>
           </div>
-          <button data-delete-id="${item.id}" class="btn-delete-history text-slate-500 hover:text-rose-400 p-1.5 transition" title="Sil">🗑️</button>
+          <button data-delete-id="${item.id}" class="btn-delete-history text-slate-500 hover:text-rose-400 p-1.5 transition cursor-pointer" title="Sil">🗑️</button>
         </div>
       </div>
     `;
@@ -892,6 +1078,36 @@ function bindEvents() {
   // App Main Mode Switchers
   if (btnModeExam) btnModeExam.addEventListener('click', () => setAppMode('exam'));
   if (btnModeFocusTodo) btnModeFocusTodo.addEventListener('click', () => setAppMode('focustodo'));
+
+  // Analytics Modal Listeners
+  if (btnOpenAnalytics) {
+    btnOpenAnalytics.addEventListener('click', () => {
+      if (modalAnalytics) modalAnalytics.classList.remove('hidden');
+      renderAnalyticsCharts(currentAnalyticsPeriod);
+    });
+  }
+  if (btnCloseAnalytics) btnCloseAnalytics.addEventListener('click', () => modalAnalytics && modalAnalytics.classList.add('hidden'));
+  if (btnCloseAnalyticsModal) btnCloseAnalyticsModal.addEventListener('click', () => modalAnalytics && modalAnalytics.classList.add('hidden'));
+
+  analyticsPeriodTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const period = tab.dataset.period;
+      renderAnalyticsCharts(period);
+    });
+  });
+
+  // Themes and Clock Style selectors
+  themeBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      setTheme(btn.dataset.theme);
+    });
+  });
+
+  clockStyleBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      setClockStyle(btn.dataset.clockStyle);
+    });
+  });
 
   // Category Filter Tabs Handler
   categoryTabs.forEach(tab => {
