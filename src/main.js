@@ -57,6 +57,8 @@ const inputTargetSeconds = document.getElementById('input-target-seconds');
 const labelTargetSeconds = document.getElementById('label-target-seconds');
 const inputTotalExamMinutes = document.getElementById('input-total-exam-minutes');
 const labelTotalExamMinutes = document.getElementById('label-total-exam-minutes');
+const toggleShowQuestionTimer = document.getElementById('toggle-show-question-timer');
+const toggleNotifyOnTimeout = document.getElementById('toggle-notify-on-timeout');
 const toggleAutoAdvance = document.getElementById('toggle-auto-advance');
 const toggleCountdownBeep = document.getElementById('toggle-countdown-beep');
 const toggleVisualFlash = document.getElementById('toggle-visual-flash');
@@ -73,6 +75,8 @@ const activePaceBadge = document.getElementById('active-pace-badge');
 const activePaceText = document.getElementById('active-pace-text');
 
 // Question Timer Card Elements
+const questionTimerVisualWrapper = document.getElementById('question-timer-visual-wrapper');
+const hiddenQuestionTimerBadge = document.getElementById('hidden-question-timer-badge');
 const displayTimerDigits = document.getElementById('display-timer-digits');
 const displayTargetSec = document.getElementById('display-target-sec');
 const labelTimeStatus = document.getElementById('label-time-status');
@@ -155,6 +159,8 @@ function applyLoadedSettings() {
   }
   updateSoundTypeButtonsUI(currentSettings.soundType);
 
+  if (toggleShowQuestionTimer) toggleShowQuestionTimer.checked = currentSettings.showQuestionTimer ?? true;
+  if (toggleNotifyOnTimeout) toggleNotifyOnTimeout.checked = currentSettings.notifyOnTimeout ?? true;
   if (toggleAutoAdvance) toggleAutoAdvance.checked = currentSettings.autoAdvanceOnTimeout;
   if (toggleCountdownBeep) toggleCountdownBeep.checked = currentSettings.countdownBeep;
   if (toggleVisualFlash) toggleVisualFlash.checked = currentSettings.visualFlash;
@@ -237,9 +243,12 @@ function setupTimerCallbacks() {
       }
     },
     onTimeout: () => {
-      soundEngine.playTimeoutAlert();
-      triggerVisualFlashAlert();
-      sendWebNotification();
+      const isNotifyEnabled = toggleNotifyOnTimeout ? toggleNotifyOnTimeout.checked : (currentSettings.notifyOnTimeout ?? true);
+      if (isNotifyEnabled) {
+        soundEngine.playTimeoutAlert();
+        triggerVisualFlashAlert();
+        sendWebNotification();
+      }
     },
     onQuestionChange: (state) => {
       clearVisualFlashAlert();
@@ -286,6 +295,17 @@ function updateActiveUI(state) {
   }
 
   // --- TIMER CARD 1: QUESTION PACER ---
+  const isQuestionTimerVisible = toggleShowQuestionTimer ? toggleShowQuestionTimer.checked : (currentSettings.showQuestionTimer ?? true);
+  if (questionTimerVisualWrapper && hiddenQuestionTimerBadge) {
+    if (isQuestionTimerVisible) {
+      questionTimerVisualWrapper.classList.remove('hidden');
+      hiddenQuestionTimerBadge.classList.add('hidden');
+    } else {
+      questionTimerVisualWrapper.classList.add('hidden');
+      hiddenQuestionTimerBadge.classList.remove('hidden');
+    }
+  }
+
   if (displayTimerDigits) {
     if (state.isOvertime) {
       displayTimerDigits.textContent = `+${formatMMSS(state.overtimeSeconds)}`;
@@ -725,6 +745,8 @@ function bindEvents() {
 
   if (btnSaveSettings) {
     btnSaveSettings.addEventListener('click', () => {
+      if (toggleShowQuestionTimer) currentSettings.showQuestionTimer = toggleShowQuestionTimer.checked;
+      if (toggleNotifyOnTimeout) currentSettings.notifyOnTimeout = toggleNotifyOnTimeout.checked;
       if (toggleAutoAdvance) currentSettings.autoAdvanceOnTimeout = toggleAutoAdvance.checked;
       if (toggleCountdownBeep) currentSettings.countdownBeep = toggleCountdownBeep.checked;
       if (toggleVisualFlash) currentSettings.visualFlash = toggleVisualFlash.checked;
@@ -819,6 +841,8 @@ function startPracticeSession() {
     totalExamMinutes
   };
   currentSettings.preset = currentPresetKey;
+  if (toggleShowQuestionTimer) currentSettings.showQuestionTimer = toggleShowQuestionTimer.checked;
+  if (toggleNotifyOnTimeout) currentSettings.notifyOnTimeout = toggleNotifyOnTimeout.checked;
   if (toggleAutoAdvance) currentSettings.autoAdvanceOnTimeout = toggleAutoAdvance.checked;
   if (toggleCountdownBeep) currentSettings.countdownBeep = toggleCountdownBeep.checked;
   if (toggleVisualFlash) currentSettings.visualFlash = toggleVisualFlash.checked;

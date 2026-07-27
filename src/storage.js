@@ -11,6 +11,8 @@ const DEFAULT_SETTINGS = {
   soundType: 'chime', // 'chime', 'bell', 'beep', 'digital'
   countdownBeep: true, // Beep during final 5 seconds
   visualFlash: true, // Flash screen on timeout
+  showQuestionTimer: true, // Show or hide per-question timer display (Gizli Mod)
+  notifyOnTimeout: true, // Trigger sound & visual alerts when question time expires
   autoAdvanceOnTimeout: false, // Wait for user or auto-advance
   autoAdvanceDelay: 1.5, // seconds delay before auto-advance
   preset: 'sayisal',

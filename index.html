@@ -349,7 +349,25 @@
             </div>
 
             <!-- Additional Options Toggles -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-slate-800/80">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2 border-t border-slate-800/80">
+              <!-- Show/Hide Question Timer Toggle -->
+              <label class="flex items-center justify-between p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 cursor-pointer hover:border-slate-700 transition">
+                <div class="space-y-0.5">
+                  <div class="text-xs font-semibold text-slate-200">Soru Sayacı Ekranı</div>
+                  <div class="text-[11px] text-slate-400">Gizlerseniz arka planda çalışır</div>
+                </div>
+                <input type="checkbox" id="toggle-show-question-timer" checked class="w-4 h-4 text-indigo-600 rounded bg-slate-800 border-slate-700 focus:ring-indigo-500">
+              </label>
+
+              <!-- Notify on Timeout Toggle -->
+              <label class="flex items-center justify-between p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 cursor-pointer hover:border-slate-700 transition">
+                <div class="space-y-0.5">
+                  <div class="text-xs font-semibold text-slate-200">Süre Doldu Bildirimi</div>
+                  <div class="text-[11px] text-slate-400">Süre bitince ses/uyarı ver</div>
+                </div>
+                <input type="checkbox" id="toggle-notify-on-timeout" checked class="w-4 h-4 text-indigo-600 rounded bg-slate-800 border-slate-700 focus:ring-indigo-500">
+              </label>
+
               <!-- Auto Advance Toggle -->
               <label class="flex items-center justify-between p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 cursor-pointer hover:border-slate-700 transition">
                 <div class="space-y-0.5">
@@ -366,15 +384,6 @@
                   <div class="text-[11px] text-slate-400">Geri sayım biplemesi</div>
                 </div>
                 <input type="checkbox" id="toggle-countdown-beep" checked class="w-4 h-4 text-indigo-600 rounded bg-slate-800 border-slate-700 focus:ring-indigo-500">
-              </label>
-
-              <!-- Visual Flash Toggle -->
-              <label class="flex items-center justify-between p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 cursor-pointer hover:border-slate-700 transition">
-                <div class="space-y-0.5">
-                  <div class="text-xs font-semibold text-slate-200">Ekran Flaş Uyarısı</div>
-                  <div class="text-[11px] text-slate-400">Süre bitince ekran parlasın</div>
-                </div>
-                <input type="checkbox" id="toggle-visual-flash" checked class="w-4 h-4 text-indigo-600 rounded bg-slate-800 border-slate-700 focus:ring-indigo-500">
               </label>
             </div>
           </div>
@@ -450,7 +459,7 @@
               </div>
 
               <!-- SVG Circular Ring & Digital Clock Display -->
-              <div class="relative w-56 h-56 flex items-center justify-center my-1 z-10">
+              <div id="question-timer-visual-wrapper" class="relative w-56 h-56 flex items-center justify-center my-1 z-10">
                 <svg class="w-full h-full transform -rotate-90 drop-shadow-2xl" viewBox="0 0 200 200">
                   <circle cx="100" cy="100" r="84" class="stroke-slate-800" stroke-width="12" fill="transparent"/>
                   <circle id="timer-ring-circle" cx="100" cy="100" r="84" class="stroke-emerald-400 transition-all duration-150" stroke-width="12" stroke-dasharray="527.78" stroke-dashoffset="0" stroke-linecap="round" fill="transparent"/>
@@ -467,6 +476,13 @@
                     <span id="display-overtime-sec" class="font-extrabold text-white">+00:00</span>
                   </div>
                 </div>
+              </div>
+
+              <!-- Hidden Question Timer Placeholder -->
+              <div id="hidden-question-timer-badge" class="hidden my-4 p-6 text-center space-y-2 font-mono text-slate-400 border border-slate-800 rounded-2xl bg-slate-950/60 z-10 w-full">
+                <span class="text-3xl">🔒</span>
+                <div class="text-sm font-bold text-slate-200">Soru Sayacı Gizli Modda</div>
+                <p class="text-xs text-slate-500 font-sans">Süre arka planda akıyor. Süre bittiğinde bildirim tercihinize göre uyarılacaksınız.</p>
               </div>
             </div>
 
