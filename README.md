@@ -1,49 +1,41 @@
-# ALES TempoKoç ⏱️
+# TempoKoç ⏱️
 
-> **ALES (Akademik Personel ve Lisansüstü Eğitimi Giriş Sınavı)** adayları için soru başına düşen zamanı etkili yönetme, süre aşımında bildirim alma ve zaman yönetimini alışkanlığa dönüştürme uygulaması.
+> **TempoKoç**: ALES, YDS, YÖKDİL, TUS, DUS ve YKS adayları için hem **Soru Başına Süreyi (Pacer)** hem **Genel Resmi Sınav Süresini** eşzamanlı takip eden, süre aşımında sesli/görsel uyarı veren zaman yönetimi asistanı.
 
-![Project Banner](public/banner.png)
+---
 
 ## 🌟 Öne Çıkan Özellikler
 
-- **🎯 ALES Sınav Modları (Presets)**:
-  - **ALES Sayısal Modu**: 50 Soru | 90 Sn / Soru
-  - **ALES Sözel Modu**: 50 Soru | 60 Sn / Soru
-  - **ALES Eşit Ağırlık Modu**: 50 Soru | 75 Sn / Soru
-  - **Özel Pratik Modu**: İstenen soru sayısı (5-100) ve hedef süre (15-300sn).
+- **⏱️ Çift Kronometre Düzeneği (Twin Timers)**:
+  - **Soru Sayacı**: Her soru için hedef süreyi ve anlık aşım süresini (`+00:15`) takip eden dairesel halka.
+  - **Genel Sınav Kronometresi**: Resmi sınav süresinden kalan dakikaları (`02:14:35`) ve sınav genel temposunu gösteren ana sayaç.
 
-- **⏳ Canlı Dairesel Süre Halkası & Overtime (Aşım) Takibi**:
-  - Süre aktıkça renk değiştiren animasyonlu halka (Yeşil ➔ Sarı ➔ Kırmızı).
-  - Süre bittiğinde anlık artan canlı **Aşım Sayacı (`+00:15`)** ve visual alert parlaması.
-  - Son 5 saniyede geri sayım sesli biplemesi.
+- **🏛️ Resmi YÖK & ÖSYM Sınav Şablonları**:
+  - **ALES Sayısal**: 50 Soru | 90s / Soru | 75 Dk Sınav
+  - **ALES Sözel**: 50 Soru | 60s / Soru | 75 Dk Sınav
+  - **ALES Tam Deneme**: 100 Soru | 90s / Soru | 150 Dk Sınav
+  - **YDS / e-YDS**: 80 Soru | 135s / Soru | 180 Dk Sınav
+  - **YÖKDİL**: 80 Soru | 135s / Soru | 180 Dk Sınav
+  - **TUS (Tıp)**: 100 Soru | 81s / Soru | 135 Dk Sınav
+  - **DUS (Diş Hekimliği)**: 120 Soru | 75s / Soru | 150 Dk Sınav
+  - **YKS - TYT**: 120 Soru | 83s / Soru | 165 Dk Sınav
+  - **Özel Sınav Modu**: Serbest süre ve soru sayısı ayarlama.
 
-- **🔊 Web Audio API Ses Motoru**:
-  - Dışarıdan dosya indirme gerektirmeyen sıfır gecikmeli ses sentezleyici (Chime, Bell, Beep, Digital).
+- **🔊 Web Audio API Ses & Ekran Uyarısı**:
+  - Süre dolduğunda sesli melodi, ekran flaşı ve son 5 saniyede geri sayım biplemesi.
 
-- **⌨️ Hızlı Klavye Kısayolları (Kâğıt Üzerinde Çözerken Kullanım)**:
+- **⌨️ Klavye Kısayolları**:
   - `Space` / `Enter` ➔ **Çözdüm / Sonraki Soru**
-  - `B` ➔ **Boş / Pas** (4 yanlış 1 doğruyu götürdüğü için boş bırakma stratejisi)
+  - `B` ➔ **Boş / Pas** (Stratejik Pas Takibi)
   - `P` ➔ **Duraklat / Devam Et**
   - `R` ➔ **Sıfırla**
 
-- **📊 Grafikli İstatistikler & Geçmiş Raporları**:
-  - **Chart.js** ile her sorunun harcanan süresini hedef çizgiyle kıyaslayan bar grafik.
-  - Oturum geçmişini `localStorage` ile tarayıcıda saklama.
+- **📊 Grafikli İpuçları & Rapor**:
+  - Chart.js zaman analizi, süre aşımı metrikleri ve `localStorage` geçmiş kaydı.
 
 ---
 
-## 🛠️ Teknolojiler
-
-- **Core**: HTML5, JavaScript (ES6+), CSS3
-- **Build Tool**: Vite
-- **Styling**: Tailwind CSS CDN & Custom Glassmorphism System
-- **Graphics & Sound**: Chart.js, Web Audio API, Canvas Confetti
-
----
-
-## 🚀 Yerelde Çalıştırma
-
-Projeyi kendi bilgisayarınızda çalıştırmak için:
+## 🚀 Kurulum & Çalıştırma
 
 ```bash
 # Bağımlılıkları yükleyin
@@ -54,13 +46,3 @@ npm run dev
 ```
 
 Tarayıcınızda `http://localhost:5173/` adresine gidin.
-
----
-
-## 📦 Production Build
-
-```bash
-npm run build
-```
-
-Derlenen dosyalar `dist/` klasörüne oluşturulur.

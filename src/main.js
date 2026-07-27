@@ -1,18 +1,39 @@
-// ALES TempoKoç — Main Controller
+// TempoKoç — Main Controller & Twin Timers Engine
 import { soundEngine } from './audio.js';
 import { StorageManager } from './storage.js';
 import { TimerEngine } from './timer.js';
 import Chart from 'chart.js/auto';
 import confetti from 'canvas-confetti';
 
-// DOM Element References
+// Format Helpers
+function formatMMSS(seconds) {
+  const isNeg = seconds < 0;
+  const absSec = Math.abs(Math.round(seconds));
+  const mins = Math.floor(absSec / 60);
+  const secs = absSec % 60;
+  const str = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  return isNeg ? `-${str}` : str;
+}
+
+function formatHHMMSS(seconds) {
+  const isNeg = seconds < 0;
+  const absSec = Math.abs(Math.round(seconds));
+  const hrs = Math.floor(absSec / 3600);
+  const mins = Math.floor((absSec % 3600) / 60);
+  const secs = absSec % 60;
+
+  const str = `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  return isNeg ? `+${str}` : str;
+}
+
+// DOM Element References (Safe getters)
 const views = {
   setup: document.getElementById('view-setup'),
   active: document.getElementById('view-active'),
   results: document.getElementById('view-results'),
 };
 
-// Controls & Badges
+// Header Controls
 const btnStartSession = document.getElementById('btn-start-session');
 const btnMuteToggle = document.getElementById('btn-mute-toggle');
 const labelAudio = document.getElementById('label-audio');
@@ -41,17 +62,17 @@ const toggleCountdownBeep = document.getElementById('toggle-countdown-beep');
 const toggleVisualFlash = document.getElementById('toggle-visual-flash');
 const presetTitleBadge = document.getElementById('preset-title-badge');
 const presetCards = document.querySelectorAll('.preset-card');
+const categoryTabs = document.querySelectorAll('.cat-tab');
 
-// Active View Elements
+// Active View Elements (Twin Timers)
 const activeQCurrent = document.getElementById('active-q-current');
 const activeQTotal = document.getElementById('active-q-total');
 const activeQProgressbar = document.getElementById('active-q-progressbar');
 const activeSessionElapsed = document.getElementById('active-session-elapsed');
 const activePaceBadge = document.getElementById('active-pace-badge');
 const activePaceText = document.getElementById('active-pace-text');
-const activeTotalExamTimer = document.getElementById('active-total-exam-timer');
-const activeTotalExamProgressbar = document.getElementById('active-total-exam-progressbar');
 
+// Question Timer Card Elements
 const displayTimerDigits = document.getElementById('display-timer-digits');
 const displayTargetSec = document.getElementById('display-target-sec');
 const labelTimeStatus = document.getElementById('label-time-status');
@@ -61,8 +82,16 @@ const overtimeBanner = document.getElementById('overtime-banner');
 const overtimeBannerTime = document.getElementById('overtime-banner-time');
 const badgeOvertimeLive = document.getElementById('badge-overtime-live');
 const displayOvertimeSec = document.getElementById('display-overtime-sec');
-const timerCardWrapper = document.getElementById('timer-card-wrapper');
 
+// Total Exam Timer Card Elements
+const activeTotalExamTimer = document.getElementById('active-total-exam-timer');
+const activeTotalExamProgressbar = document.getElementById('active-total-exam-progressbar');
+const labelTotalExamStatus = document.getElementById('label-total-exam-status');
+const labelTotalExamPresetBadge = document.getElementById('label-total-exam-preset-badge');
+const labelTotalExamPct = document.getElementById('label-total-exam-pct');
+const labelExamAdvice = document.getElementById('label-exam-advice');
+
+// Action Deck
 const btnActionSolve = document.getElementById('btn-action-solve');
 const btnActionSkip = document.getElementById('btn-action-skip');
 const btnActionPause = document.getElementById('btn-action-pause');
@@ -105,7 +134,7 @@ function initApp() {
   bindEvents();
   renderHistoryList();
 
-  // Ask for notification permission lazily
+  // Notification permission lazy prompt
   if ('Notification' in window && Notification.permission === 'default') {
     Notification.requestPermission();
   }
@@ -118,14 +147,17 @@ function applyLoadedSettings() {
 
   updateAudioBtnUI();
 
-  // Settings modal inputs
-  inputVolume.value = Math.round(currentSettings.soundVolume * 100);
-  labelVolumeVal.textContent = `${inputVolume.value}%`;
+  if (inputVolume) {
+    inputVolume.value = Math.round(currentSettings.soundVolume * 100);
+  }
+  if (labelVolumeVal) {
+    labelVolumeVal.textContent = `${Math.round(currentSettings.soundVolume * 100)}%`;
+  }
   updateSoundTypeButtonsUI(currentSettings.soundType);
 
-  toggleAutoAdvance.checked = currentSettings.autoAdvanceOnTimeout;
-  toggleCountdownBeep.checked = currentSettings.countdownBeep;
-  toggleVisualFlash.checked = currentSettings.visualFlash;
+  if (toggleAutoAdvance) toggleAutoAdvance.checked = currentSettings.autoAdvanceOnTimeout;
+  if (toggleCountdownBeep) toggleCountdownBeep.checked = currentSettings.countdownBeep;
+  if (toggleVisualFlash) toggleVisualFlash.checked = currentSettings.visualFlash;
 
   // Set active preset
   selectPreset(currentSettings.preset || 'sayisal');
@@ -133,11 +165,11 @@ function applyLoadedSettings() {
 
 function updateAudioBtnUI() {
   if (soundEngine.muted) {
-    iconAudio.textContent = '🔇';
-    labelAudio.textContent = 'Ses Kapalı';
+    if (iconAudio) iconAudio.textContent = '🔇';
+    if (labelAudio) labelAudio.textContent = 'Ses Kapalı';
   } else {
-    iconAudio.textContent = '🔊';
-    labelAudio.textContent = 'Ses Açık';
+    if (iconAudio) iconAudio.textContent = '🔊';
+    if (labelAudio) labelAudio.textContent = 'Ses Açık';
   }
 }
 
@@ -165,11 +197,11 @@ function selectPreset(presetKey) {
     }
   });
 
-  inputTotalQuestions.value = p.totalQuestions;
-  labelTotalQuestions.textContent = `${p.totalQuestions} Soru`;
+  if (inputTotalQuestions) inputTotalQuestions.value = p.totalQuestions;
+  if (labelTotalQuestions) labelTotalQuestions.textContent = `${p.totalQuestions} Soru`;
 
-  inputTargetSeconds.value = p.targetSeconds;
-  labelTargetSeconds.textContent = `${p.targetSeconds} Saniye (${formatMMSS(p.targetSeconds)})`;
+  if (inputTargetSeconds) inputTargetSeconds.value = p.targetSeconds;
+  if (labelTargetSeconds) labelTargetSeconds.textContent = `${p.targetSeconds} Saniye (${formatMMSS(p.targetSeconds)})`;
 
   if (p.totalExamMinutes && inputTotalExamMinutes) {
     inputTotalExamMinutes.value = p.totalExamMinutes;
@@ -178,37 +210,18 @@ function selectPreset(presetKey) {
     }
   }
 
-  presetTitleBadge.textContent = p.name;
-}
-
-// Format Helpers
-function formatMMSS(seconds) {
-  const isNeg = seconds < 0;
-  const absSec = Math.abs(Math.round(seconds));
-  const mins = Math.floor(absSec / 60);
-  const secs = absSec % 60;
-  const str = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  return isNeg ? `-${str}` : str;
-}
-
-function formatHHMMSS(seconds) {
-  const isNeg = seconds < 0;
-  const absSec = Math.abs(Math.round(seconds));
-  const hrs = Math.floor(absSec / 3600);
-  const mins = Math.floor((absSec % 3600) / 60);
-  const secs = absSec % 60;
-
-  const str = `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  return isNeg ? `+${str}` : str;
+  if (presetTitleBadge) presetTitleBadge.textContent = p.name;
 }
 
 // View Navigation
 function showView(viewName) {
   Object.keys(views).forEach(k => {
-    if (k === viewName) {
-      views[k].classList.remove('hidden');
-    } else {
-      views[k].classList.add('hidden');
+    if (views[k]) {
+      if (k === viewName) {
+        views[k].classList.remove('hidden');
+      } else {
+        views[k].classList.add('hidden');
+      }
     }
   });
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -219,7 +232,7 @@ function setupTimerCallbacks() {
   timerEngine.setCallbacks({
     onTick: (state) => updateActiveUI(state),
     onCountdownTick: () => {
-      if (toggleCountdownBeep.checked) {
+      if (toggleCountdownBeep && toggleCountdownBeep.checked) {
         soundEngine.playCountdownTick();
       }
     },
@@ -246,23 +259,99 @@ function setupTimerCallbacks() {
   });
 }
 
-// Update Active Pacer View UI
+// Update Active Pacer View UI (Twin Timers Dashboard)
 function updateActiveUI(state) {
-  activeQCurrent.textContent = state.currentQuestionNum;
-  activeQTotal.textContent = state.totalQuestions;
-  const progressPct = ((state.currentQuestionNum - 1) / state.totalQuestions) * 100;
-  activeQProgressbar.style.width = `${progressPct}%`;
+  if (activeQCurrent) activeQCurrent.textContent = state.currentQuestionNum;
+  if (activeQTotal) activeQTotal.textContent = state.totalQuestions;
+  
+  if (activeQProgressbar) {
+    const progressPct = ((state.currentQuestionNum - 1) / state.totalQuestions) * 100;
+    activeQProgressbar.style.width = `${progressPct}%`;
+  }
 
-  activeSessionElapsed.textContent = formatMMSS(state.sessionTotalElapsed);
+  if (activeSessionElapsed) activeSessionElapsed.textContent = formatMMSS(state.sessionTotalElapsed);
 
-  // Update Overall Total Exam Timer Widget
+  // Pace Diff calculation badge
+  if (activePaceBadge && activePaceText) {
+    if (state.totalPaceDiff < -5) {
+      activePaceBadge.className = 'px-3.5 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold text-xs sm:text-sm flex items-center gap-1.5';
+      activePaceText.textContent = `⚡ Temponun ${Math.abs(Math.round(state.totalPaceDiff))}sn Önündesin`;
+    } else if (state.totalPaceDiff > 5) {
+      activePaceBadge.className = 'px-3.5 py-1.5 rounded-xl bg-rose-500/20 text-rose-300 border border-rose-500/30 font-semibold text-xs sm:text-sm flex items-center gap-1.5';
+      activePaceText.textContent = `⚠️ Temponun ${Math.round(state.totalPaceDiff)}sn Geridesin`;
+    } else {
+      activePaceBadge.className = 'px-3.5 py-1.5 rounded-xl bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-semibold text-xs sm:text-sm flex items-center gap-1.5';
+      activePaceText.textContent = `🎯 Hedef Tempoyla Tam Dengedesin`;
+    }
+  }
+
+  // --- TIMER CARD 1: QUESTION PACER ---
+  if (displayTimerDigits) {
+    if (state.isOvertime) {
+      displayTimerDigits.textContent = `+${formatMMSS(state.overtimeSeconds)}`;
+      displayTimerDigits.classList.add('text-rose-400');
+      displayTimerDigits.classList.remove('text-white');
+    } else {
+      displayTimerDigits.textContent = formatMMSS(state.remainingSeconds);
+      displayTimerDigits.classList.remove('text-rose-400');
+      displayTimerDigits.classList.add('text-white');
+    }
+  }
+
+  if (displayOvertimeSec) displayOvertimeSec.textContent = `+${formatMMSS(state.overtimeSeconds)}`;
+  if (overtimeBannerTime) overtimeBannerTime.textContent = `+${formatMMSS(state.overtimeSeconds)} (Toplam: ${formatMMSS(state.currentQuestionElapsed)})`;
+
+  if (badgeOvertimeLive) {
+    if (state.isOvertime) badgeOvertimeLive.classList.remove('hidden');
+    else badgeOvertimeLive.classList.add('hidden');
+  }
+
+  if (overtimeBanner) {
+    if (state.isOvertime) overtimeBanner.classList.remove('hidden');
+    else overtimeBanner.classList.add('hidden');
+  }
+
+  if (displayTargetSec) displayTargetSec.textContent = `Hedef: ${state.targetSeconds} sn`;
+
+  // Pause button state
+  if (labelBtnPause && iconBtnPause) {
+    if (state.status === 'paused') {
+      iconBtnPause.textContent = '▶️';
+      labelBtnPause.textContent = 'Devam Et';
+      if (labelTimeStatus) labelTimeStatus.textContent = 'DURAKLATILDI';
+    } else {
+      iconBtnPause.textContent = '⏸️';
+      labelBtnPause.textContent = 'Duraklat';
+      if (labelTimeStatus) labelTimeStatus.textContent = state.isOvertime ? 'SÜRE AŞIMI (OVERTIME)' : 'Kalan Süre';
+    }
+  }
+
+  // SVG Ring calculation
+  if (timerRingCircle) {
+    const totalCircleLength = 527.78;
+    const ratio = Math.max(0, state.remainingSeconds / state.targetSeconds);
+    const strokeOffset = totalCircleLength * (1 - ratio);
+    timerRingCircle.style.strokeDashoffset = strokeOffset;
+
+    if (state.isOvertime) {
+      timerRingCircle.setAttribute('class', 'stroke-rose-500 transition-all duration-150 timer-ring-red');
+    } else if (ratio < 0.25) {
+      timerRingCircle.setAttribute('class', 'stroke-amber-400 transition-all duration-150 timer-ring-yellow');
+    } else {
+      timerRingCircle.setAttribute('class', 'stroke-emerald-400 transition-all duration-150 timer-ring-green');
+    }
+  }
+
+  // --- TIMER CARD 2: OVERALL TOTAL EXAM TIMER ---
   if (activeTotalExamTimer) {
     if (state.isTotalExamOvertime) {
       activeTotalExamTimer.textContent = `+${formatHHMMSS(state.totalExamOvertimeSeconds)}`;
-      activeTotalExamTimer.className = 'font-mono font-black text-rose-400 text-sm sm:text-base animate-pulse';
+      activeTotalExamTimer.className = 'font-mono font-black text-5xl sm:text-6xl tracking-tight text-rose-400 drop-shadow-lg animate-pulse';
+      if (labelTotalExamStatus) labelTotalExamStatus.textContent = '⚠️ RESMİ SINAV SÜRESİ AŞILDI';
     } else {
       activeTotalExamTimer.textContent = formatHHMMSS(state.totalExamRemainingSeconds);
-      activeTotalExamTimer.className = 'font-mono font-black text-indigo-300 text-sm sm:text-base';
+      activeTotalExamTimer.className = 'font-mono font-black text-5xl sm:text-6xl tracking-tight text-indigo-300 drop-shadow-lg';
+      if (labelTotalExamStatus) labelTotalExamStatus.textContent = 'Resmi Sınav Kalan Süre';
     }
   }
 
@@ -271,82 +360,43 @@ function updateActiveUI(state) {
     activeTotalExamProgressbar.style.width = `${pct}%`;
   }
 
-  // Pace Diff calculation badge
-  if (state.totalPaceDiff < -5) {
-    activePaceBadge.className = 'px-3 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold flex items-center gap-1';
-    activePaceText.textContent = `⚡ Temponun ${Math.abs(Math.round(state.totalPaceDiff))}sn Önündesin`;
-  } else if (state.totalPaceDiff > 5) {
-    activePaceBadge.className = 'px-3 py-1 rounded-lg bg-rose-500/20 text-rose-300 border border-rose-500/30 font-semibold flex items-center gap-1';
-    activePaceText.textContent = `⚠️ Temponun ${Math.round(state.totalPaceDiff)}sn Geridesin`;
-  } else {
-    activePaceBadge.className = 'px-3 py-1 rounded-lg bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-semibold flex items-center gap-1';
-    activePaceText.textContent = `🎯 Hedef Tempoyla Tam Dengedesin`;
+  if (labelTotalExamPct) {
+    const pct = Math.max(0, Math.round(100 - state.totalExamProgressPercent));
+    labelTotalExamPct.textContent = `%${pct} Kalan`;
   }
 
-  // Timer Digits & Overtime Display
-  if (state.isOvertime) {
-    displayTimerDigits.textContent = `+${formatMMSS(state.overtimeSeconds)}`;
-    displayOvertimeSec.textContent = `+${formatMMSS(state.overtimeSeconds)}`;
-    if (overtimeBannerTime) {
-      overtimeBannerTime.textContent = `+${formatMMSS(state.overtimeSeconds)} (Toplam: ${formatMMSS(state.currentQuestionElapsed)})`;
+  if (labelTotalExamPresetBadge) {
+    labelTotalExamPresetBadge.textContent = `Resmi Süre: ${state.totalExamMinutes} Dk`;
+  }
+
+  if (labelExamAdvice) {
+    if (state.isTotalExamOvertime) {
+      labelExamAdvice.textContent = '⚠️ Dikkat! Resmi sınav süresi doldu. Soruları hızlıca tamamlayın.';
+    } else if (state.totalPaceDiff > 15) {
+      labelExamAdvice.textContent = '⚠️ Temponuz hedef sürenin gerisinde. Pas geçme stratejisini kullanabilirsiniz.';
+    } else {
+      labelExamAdvice.textContent = '💡 Harika gidiyorsunuz! Genel sınav süresini dengeli harcıyorsunuz.';
     }
-    badgeOvertimeLive.classList.remove('hidden');
-    overtimeBanner.classList.remove('hidden');
-
-    displayTimerDigits.classList.add('text-rose-400');
-    displayTimerDigits.classList.remove('text-white');
-  } else {
-    displayTimerDigits.textContent = formatMMSS(state.remainingSeconds);
-    badgeOvertimeLive.classList.add('hidden');
-    overtimeBanner.classList.add('hidden');
-
-    displayTimerDigits.classList.remove('text-rose-400');
-    displayTimerDigits.classList.add('text-white');
-  }
-
-  displayTargetSec.textContent = `${state.targetSeconds} sn`;
-
-  // Pause button state
-  if (state.status === 'paused') {
-    iconBtnPause.textContent = '▶️';
-    labelBtnPause.textContent = 'Devam Et';
-    labelTimeStatus.textContent = 'DURAKLATILDI';
-  } else {
-    iconBtnPause.textContent = '⏸️';
-    labelBtnPause.textContent = 'Duraklat';
-    labelTimeStatus.textContent = state.isOvertime ? 'SÜRE AŞIMI (OVERTIME)' : 'Kalan Süre';
-  }
-
-  // SVG Ring calculation
-  const totalCircleLength = 552.92;
-  const ratio = Math.max(0, state.remainingSeconds / state.targetSeconds);
-  const strokeOffset = totalCircleLength * (1 - ratio);
-  timerRingCircle.style.strokeDashoffset = strokeOffset;
-
-  // Ring Color
-  if (state.isOvertime) {
-    timerRingCircle.setAttribute('class', 'stroke-rose-500 transition-all duration-150 timer-ring-red');
-  } else if (ratio < 0.25) {
-    timerRingCircle.setAttribute('class', 'stroke-amber-400 transition-all duration-150 timer-ring-yellow');
-  } else {
-    timerRingCircle.setAttribute('class', 'stroke-emerald-400 transition-all duration-150 timer-ring-green');
   }
 }
 
 // Visual Flash Effect on Timeout
 function triggerVisualFlashAlert() {
-  if (!toggleVisualFlash.checked) return;
-  flashOverlay.classList.add('animate-flash-alert');
+  if (toggleVisualFlash && toggleVisualFlash.checked && flashOverlay) {
+    flashOverlay.classList.add('animate-flash-alert');
+  }
 }
 
 function clearVisualFlashAlert() {
-  flashOverlay.classList.remove('animate-flash-alert');
+  if (flashOverlay) {
+    flashOverlay.classList.remove('animate-flash-alert');
+  }
 }
 
 // Browser Web Notification
 function sendWebNotification() {
   if ('Notification' in window && Notification.permission === 'granted') {
-    new Notification('ALES TempoKoç: Süre Doldu!', {
+    new Notification('TempoKoç: Süre Doldu!', {
       body: `Soru ${timerEngine.currentQuestionIndex + 1} için hedef süre tamamlandı. Pas geçin veya sonraki soruya ilerleyin!`,
       icon: '/favicon.svg'
     });
@@ -355,6 +405,7 @@ function sendWebNotification() {
 
 // Render Question Log Chips
 function renderLogChips(logs) {
+  if (!activeLogChips) return;
   if (!logs || logs.length === 0) {
     activeLogChips.innerHTML = '<span class="text-xs text-slate-500 italic">Henüz soru yanıtlanmadı...</span>';
     return;
@@ -381,7 +432,6 @@ function renderLogChips(logs) {
     `;
   }).join('');
 
-  // Scroll to latest log chip
   activeLogChips.scrollLeft = activeLogChips.scrollWidth;
 }
 
@@ -392,46 +442,46 @@ function showResultsView(report) {
   const onTimeCount = report.solvedCount;
   const onTimePct = Math.round((onTimeCount / report.totalQuestions) * 100);
 
-  resMetricOntimeRate.textContent = `${onTimePct}%`;
-  resMetricOntimeCount.textContent = `${onTimeCount} / ${report.totalQuestions} Soru`;
+  if (resMetricOntimeRate) resMetricOntimeRate.textContent = `${onTimePct}%`;
+  if (resMetricOntimeCount) resMetricOntimeCount.textContent = `${onTimeCount} / ${report.totalQuestions} Soru`;
 
-  resMetricAvgTime.textContent = `${formatMMSS(report.avgTimePerQuestion)}`;
-  resMetricTargetComparison.textContent = `Hedef: ${report.targetSeconds} sn`;
+  if (resMetricAvgTime) resMetricAvgTime.textContent = `${formatMMSS(report.avgTimePerQuestion)}`;
+  if (resMetricTargetComparison) resMetricTargetComparison.textContent = `Hedef: ${report.targetSeconds} sn`;
 
-  resMetricOvertimeCount.textContent = `${report.timeoutCount} Soru`;
-  if (resMetricOvertimeTotal) {
-    resMetricOvertimeTotal.textContent = `Toplam +${formatMMSS(report.totalOvertimeSeconds || 0)} Aşım`;
+  if (resMetricOvertimeCount) resMetricOvertimeCount.textContent = `${report.timeoutCount} Soru`;
+  if (resMetricOvertimeTotal) resMetricOvertimeTotal.textContent = `Toplam +${formatMMSS(report.totalOvertimeSeconds || 0)} Aşım`;
+  if (resMetricSkippedCount) resMetricSkippedCount.textContent = `${report.skippedCount} Soru`;
+
+  if (resultsSummarySubtitle) {
+    resultsSummarySubtitle.textContent = `Toplam ${report.totalQuestions} soruluk testi ${formatMMSS(report.sessionTotalElapsed)} sürede tamamladınız. Ortalama soru başına harcanan süre ${report.avgTimePerQuestion} saniye.`;
   }
-  resMetricSkippedCount.textContent = `${report.skippedCount} Soru`;
-
-  resultsSummarySubtitle.textContent = `Toplam ${report.totalQuestions} soruluk testi ${formatMMSS(report.sessionTotalElapsed)} sürede tamamladınız. Ortamala soru başına harcanan süre ${report.avgTimePerQuestion} saniye.`;
 
   // Render Table Rows
-  tableResultsBody.innerHTML = report.questionLogs.map(log => {
-    let statusBadge = '<span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-semibold">✓ Zamanında</span>';
-    if (log.status === 'skipped') {
-      statusBadge = '<span class="px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-semibold">⊘ Boş</span>';
-    } else if (log.status === 'timeout') {
-      statusBadge = '<span class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 font-semibold">⚠ Süre Aşımı</span>';
-    }
+  if (tableResultsBody) {
+    tableResultsBody.innerHTML = report.questionLogs.map(log => {
+      let statusBadge = '<span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-semibold">✓ Zamanında</span>';
+      if (log.status === 'skipped') {
+        statusBadge = '<span class="px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-semibold">⊘ Boş</span>';
+      } else if (log.status === 'timeout') {
+        statusBadge = '<span class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 font-semibold">⚠ Süre Aşımı</span>';
+      }
 
-    const deltaStr = log.delta > 0 ? `+${log.delta}s (Aşım)` : `${log.delta}s (Hızlı)`;
-    const deltaColor = log.delta > 0 ? 'text-rose-400' : 'text-emerald-400';
+      const deltaStr = log.delta > 0 ? `+${log.delta}s (Aşım)` : `${log.delta}s (Hızlı)`;
+      const deltaColor = log.delta > 0 ? 'text-rose-400' : 'text-emerald-400';
 
-    return `
-      <tr class="hover:bg-slate-800/40">
-        <td class="p-3 font-bold text-white">Soru ${log.questionNum}</td>
-        <td class="p-3 font-semibold text-slate-200">${log.actualSeconds} saniye</td>
-        <td class="p-3 ${deltaColor}">${deltaStr}</td>
-        <td class="p-3">${statusBadge}</td>
-      </tr>
-    `;
-  }).join('');
+      return `
+        <tr class="hover:bg-slate-800/40">
+          <td class="p-3 font-bold text-white">Soru ${log.questionNum}</td>
+          <td class="p-3 font-semibold text-slate-200">${log.actualSeconds} saniye</td>
+          <td class="p-3 ${deltaColor}">${deltaStr}</td>
+          <td class="p-3">${statusBadge}</td>
+        </tr>
+      `;
+    }).join('');
+  }
 
-  // Render Chart.js Chart
   renderResultsChart(report);
 
-  // Trigger Celebration Confetti if user did great!
   if (onTimePct >= 65) {
     confetti({
       particleCount: 80,
@@ -455,9 +505,9 @@ function renderResultsChart(report) {
   const targetSec = report.targetSeconds;
 
   const barBackgroundColors = report.questionLogs.map(q => {
-    if (q.status === 'skipped') return 'rgba(100, 116, 139, 0.6)'; // slate
-    if (q.actualSeconds > targetSec) return 'rgba(244, 63, 94, 0.85)'; // red overtime
-    return 'rgba(16, 185, 129, 0.85)'; // green on time
+    if (q.status === 'skipped') return 'rgba(100, 116, 139, 0.6)';
+    if (q.actualSeconds > targetSec) return 'rgba(244, 63, 94, 0.85)';
+    return 'rgba(16, 185, 129, 0.85)';
   });
 
   resultsChartInstance = new Chart(canvas, {
@@ -476,7 +526,7 @@ function renderResultsChart(report) {
           label: 'Hedef Süre Çizgisi',
           data: Array(labels.length).fill(targetSec),
           type: 'line',
-          borderColor: '#818cf8', // Indigo 400
+          borderColor: '#818cf8',
           borderWidth: 2.5,
           borderDash: [5, 5],
           pointRadius: 0,
@@ -524,6 +574,7 @@ function renderResultsChart(report) {
 
 // History List Renderer
 function renderHistoryList() {
+  if (!historyListContainer) return;
   const history = StorageManager.getHistory();
   if (!history || history.length === 0) {
     historyListContainer.innerHTML = '<p class="text-xs text-slate-500 italic text-center py-6">Henüz geçmiş deneme kaydı yok.</p>';
@@ -556,7 +607,6 @@ function renderHistoryList() {
     `;
   }).join('');
 
-  // Delete listeners
   document.querySelectorAll('.btn-delete-history').forEach(btn => {
     btn.addEventListener('click', (e) => {
       const id = e.currentTarget.dataset.deleteId;
@@ -568,6 +618,28 @@ function renderHistoryList() {
 
 // Bind Event Listeners
 function bindEvents() {
+  // Category Filter Tabs Handler
+  categoryTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const cat = tab.dataset.cat;
+      categoryTabs.forEach(t => {
+        if (t === tab) {
+          t.className = 'cat-tab active px-3 py-1.5 rounded-lg transition text-white bg-indigo-600 font-bold';
+        } else {
+          t.className = 'cat-tab px-3 py-1.5 rounded-lg transition text-slate-400 hover:text-white hover:bg-slate-800';
+        }
+      });
+
+      presetCards.forEach(card => {
+        if (cat === 'all' || card.dataset.category === cat) {
+          card.classList.remove('hidden');
+        } else {
+          card.classList.add('hidden');
+        }
+      });
+    });
+  });
+
   // Preset Selection Cards
   presetCards.forEach(card => {
     card.addEventListener('click', () => {
@@ -576,24 +648,28 @@ function bindEvents() {
   });
 
   // Custom Sliders
-  inputTotalQuestions.addEventListener('input', (e) => {
-    labelTotalQuestions.textContent = `${e.target.value} Soru`;
-    if (currentPresetKey !== 'custom') {
-      selectPreset('custom');
-    }
-    const customCardQs = document.getElementById('custom-card-qs');
-    if (customCardQs) customCardQs.textContent = `${e.target.value} Soru`;
-  });
+  if (inputTotalQuestions) {
+    inputTotalQuestions.addEventListener('input', (e) => {
+      if (labelTotalQuestions) labelTotalQuestions.textContent = `${e.target.value} Soru`;
+      if (currentPresetKey !== 'custom') {
+        selectPreset('custom');
+      }
+      const customCardQs = document.getElementById('custom-card-qs');
+      if (customCardQs) customCardQs.textContent = `${e.target.value} Soru | ${inputTotalExamMinutes ? inputTotalExamMinutes.value : 30} Dk`;
+    });
+  }
 
-  inputTargetSeconds.addEventListener('input', (e) => {
-    const val = parseInt(e.target.value, 10);
-    labelTargetSeconds.textContent = `${val} Saniye (${formatMMSS(val)})`;
-    if (currentPresetKey !== 'custom') {
-      selectPreset('custom');
-    }
-    const customCardSec = document.getElementById('custom-card-sec');
-    if (customCardSec) customCardSec.textContent = `${val}s / Soru`;
-  });
+  if (inputTargetSeconds) {
+    inputTargetSeconds.addEventListener('input', (e) => {
+      const val = parseInt(e.target.value, 10);
+      if (labelTargetSeconds) labelTargetSeconds.textContent = `${val} Saniye (${formatMMSS(val)})`;
+      if (currentPresetKey !== 'custom') {
+        selectPreset('custom');
+      }
+      const customCardSec = document.getElementById('custom-card-sec');
+      if (customCardSec) customCardSec.textContent = `${val}s / Soru`;
+    });
+  }
 
   if (inputTotalExamMinutes) {
     inputTotalExamMinutes.addEventListener('input', (e) => {
@@ -605,24 +681,26 @@ function bindEvents() {
         selectPreset('custom');
       }
       const customCardQs = document.getElementById('custom-card-qs');
-      if (customCardQs) customCardQs.textContent = `${inputTotalQuestions.value} Soru | ${val} Dk`;
+      if (customCardQs) customCardQs.textContent = `${inputTotalQuestions ? inputTotalQuestions.value : 20} Soru | ${val} Dk`;
     });
   }
 
   // Start Session Button
-  btnStartSession.addEventListener('click', startPracticeSession);
+  if (btnStartSession) btnStartSession.addEventListener('click', startPracticeSession);
 
   // Audio Toggle
-  btnMuteToggle.addEventListener('click', () => {
-    soundEngine.setMuted(!soundEngine.muted);
-    currentSettings.soundEnabled = !soundEngine.muted;
-    StorageManager.saveSettings(currentSettings);
-    updateAudioBtnUI();
-  });
+  if (btnMuteToggle) {
+    btnMuteToggle.addEventListener('click', () => {
+      soundEngine.setMuted(!soundEngine.muted);
+      currentSettings.soundEnabled = !soundEngine.muted;
+      StorageManager.saveSettings(currentSettings);
+      updateAudioBtnUI();
+    });
+  }
 
   // Settings Modal
-  btnOpenSettings.addEventListener('click', () => modalSettings.classList.remove('hidden'));
-  btnCloseSettings.addEventListener('click', () => modalSettings.classList.add('hidden'));
+  if (btnOpenSettings) btnOpenSettings.addEventListener('click', () => modalSettings && modalSettings.classList.remove('hidden'));
+  if (btnCloseSettings) btnCloseSettings.addEventListener('click', () => modalSettings && modalSettings.classList.add('hidden'));
 
   soundTypeButtons.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -633,74 +711,93 @@ function bindEvents() {
     });
   });
 
-  inputVolume.addEventListener('input', (e) => {
-    const val = parseInt(e.target.value, 10);
-    labelVolumeVal.textContent = `${val}%`;
-    const vol = val / 100;
-    currentSettings.soundVolume = vol;
-    soundEngine.setVolume(vol);
-  });
+  if (inputVolume) {
+    inputVolume.addEventListener('input', (e) => {
+      const val = parseInt(e.target.value, 10);
+      if (labelVolumeVal) labelVolumeVal.textContent = `${val}%`;
+      const vol = val / 100;
+      currentSettings.soundVolume = vol;
+      soundEngine.setVolume(vol);
+    });
+  }
 
-  btnTestSound.addEventListener('click', () => soundEngine.testSound());
+  if (btnTestSound) btnTestSound.addEventListener('click', () => soundEngine.testSound());
 
-  btnSaveSettings.addEventListener('click', () => {
-    currentSettings.autoAdvanceOnTimeout = toggleAutoAdvance.checked;
-    currentSettings.countdownBeep = toggleCountdownBeep.checked;
-    currentSettings.visualFlash = toggleVisualFlash.checked;
-    StorageManager.saveSettings(currentSettings);
-    modalSettings.classList.add('hidden');
-  });
+  if (btnSaveSettings) {
+    btnSaveSettings.addEventListener('click', () => {
+      if (toggleAutoAdvance) currentSettings.autoAdvanceOnTimeout = toggleAutoAdvance.checked;
+      if (toggleCountdownBeep) currentSettings.countdownBeep = toggleCountdownBeep.checked;
+      if (toggleVisualFlash) currentSettings.visualFlash = toggleVisualFlash.checked;
+      StorageManager.saveSettings(currentSettings);
+      if (modalSettings) modalSettings.classList.add('hidden');
+    });
+  }
 
   // History Modal
-  btnOpenHistory.addEventListener('click', () => modalHistory.classList.remove('hidden'));
-  btnCloseHistory.addEventListener('click', () => modalHistory.classList.add('hidden'));
-  btnCloseHistoryModal.addEventListener('click', () => modalHistory.classList.add('hidden'));
+  if (btnOpenHistory) btnOpenHistory.addEventListener('click', () => modalHistory && modalHistory.classList.remove('hidden'));
+  if (btnCloseHistory) btnCloseHistory.addEventListener('click', () => modalHistory && modalHistory.classList.add('hidden'));
+  if (btnCloseHistoryModal) btnCloseHistoryModal.addEventListener('click', () => modalHistory && modalHistory.classList.add('hidden'));
 
-  btnClearHistory.addEventListener('click', () => {
-    if (confirm('Tüm deneme geçmişini silmek istediğinize emin misiniz?')) {
-      StorageManager.clearHistory();
-      renderHistoryList();
-    }
-  });
+  if (btnClearHistory) {
+    btnClearHistory.addEventListener('click', () => {
+      if (confirm('Tüm deneme geçmişini silmek istediğinize emin misiniz?')) {
+        StorageManager.clearHistory();
+        renderHistoryList();
+      }
+    });
+  }
 
   // Active View Actions
-  btnActionSolve.addEventListener('click', () => {
-    soundEngine.playQuestionComplete();
-    timerEngine.markSolved();
-  });
+  if (btnActionSolve) {
+    btnActionSolve.addEventListener('click', () => {
+      soundEngine.playQuestionComplete();
+      timerEngine.markSolved();
+    });
+  }
 
-  btnActionSkip.addEventListener('click', () => {
-    soundEngine.playSkipSound();
-    timerEngine.markSkipped();
-  });
+  if (btnActionSkip) {
+    btnActionSkip.addEventListener('click', () => {
+      soundEngine.playSkipSound();
+      timerEngine.markSkipped();
+    });
+  }
 
-  btnActionPause.addEventListener('click', () => {
-    timerEngine.togglePause();
-  });
+  if (btnActionPause) {
+    btnActionPause.addEventListener('click', () => {
+      timerEngine.togglePause();
+    });
+  }
 
-  btnActionPrev.addEventListener('click', () => {
-    timerEngine.previousQuestion();
-  });
+  if (btnActionPrev) {
+    btnActionPrev.addEventListener('click', () => {
+      timerEngine.previousQuestion();
+    });
+  }
 
-  btnActionReset.addEventListener('click', () => {
-    if (confirm('Mevcut testi sıfırlayıp ana ekrana dönmek istiyor musunuz?')) {
-      timerEngine.resetSession();
+  if (btnActionReset) {
+    btnActionReset.addEventListener('click', () => {
+      if (confirm('Mevcut testi sıfırlayıp ana ekrana dönmek istiyor musunuz?')) {
+        timerEngine.resetSession();
+        showView('setup');
+      }
+    });
+  }
+
+  if (btnRestartNew) {
+    btnRestartNew.addEventListener('click', () => {
       showView('setup');
-    }
-  });
+    });
+  }
 
-  // Restart Button from Results
-  btnRestartNew.addEventListener('click', () => {
-    showView('setup');
-  });
-
-  btnLogoHome.addEventListener('click', () => {
-    if (timerEngine.status === 'running' || timerEngine.status === 'paused') {
-      if (!confirm('Devam eden testiniz var. Ana ekrana dönmek istediğinize emin misiniz?')) return;
-      timerEngine.resetSession();
-    }
-    showView('setup');
-  });
+  if (btnLogoHome) {
+    btnLogoHome.addEventListener('click', () => {
+      if (timerEngine.status === 'running' || timerEngine.status === 'paused') {
+        if (!confirm('Devam eden testiniz var. Ana ekrana dönmek istediğinize emin misiniz?')) return;
+        timerEngine.resetSession();
+      }
+      showView('setup');
+    });
+  }
 
   // Global Keyboard Shortcuts
   window.addEventListener('keydown', handleKeyboardShortcuts);
@@ -710,8 +807,8 @@ function bindEvents() {
 function startPracticeSession() {
   soundEngine.init();
 
-  const totalQuestions = parseInt(inputTotalQuestions.value, 10);
-  const targetSeconds = parseInt(inputTargetSeconds.value, 10);
+  const totalQuestions = inputTotalQuestions ? parseInt(inputTotalQuestions.value, 10) : 50;
+  const targetSeconds = inputTargetSeconds ? parseInt(inputTargetSeconds.value, 10) : 90;
   const totalExamMinutes = inputTotalExamMinutes ? parseInt(inputTotalExamMinutes.value, 10) : 75;
 
   // Save selected settings
@@ -722,9 +819,9 @@ function startPracticeSession() {
     totalExamMinutes
   };
   currentSettings.preset = currentPresetKey;
-  currentSettings.autoAdvanceOnTimeout = toggleAutoAdvance.checked;
-  currentSettings.countdownBeep = toggleCountdownBeep.checked;
-  currentSettings.visualFlash = toggleVisualFlash.checked;
+  if (toggleAutoAdvance) currentSettings.autoAdvanceOnTimeout = toggleAutoAdvance.checked;
+  if (toggleCountdownBeep) currentSettings.countdownBeep = toggleCountdownBeep.checked;
+  if (toggleVisualFlash) currentSettings.visualFlash = toggleVisualFlash.checked;
 
   StorageManager.saveSettings(currentSettings);
 
@@ -734,19 +831,17 @@ function startPracticeSession() {
     totalQuestions,
     targetSeconds,
     totalExamMinutes,
-    autoAdvanceOnTimeout: toggleAutoAdvance.checked,
-    countdownBeepEnabled: toggleCountdownBeep.checked,
+    autoAdvanceOnTimeout: toggleAutoAdvance ? toggleAutoAdvance.checked : false,
+    countdownBeepEnabled: toggleCountdownBeep ? toggleCountdownBeep.checked : true,
   });
 }
 
 // Keyboard Shortcut Handler
 function handleKeyboardShortcuts(e) {
-  // Ignore shortcuts if typing in input fields
   if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
     return;
   }
 
-  // Active Timer view shortcuts
   if (timerEngine.status === 'running' || timerEngine.status === 'paused') {
     if (e.code === 'Space') {
       e.preventDefault();
