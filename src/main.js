@@ -570,6 +570,22 @@ function updatePomodoroUI(state) {
   if (flipMins) flipMins.textContent = minsStr;
   if (flipSecs) flipSecs.textContent = secsStr;
 
+  // Fullscreen Immersive Focus Mode Elements
+  const fsFlipMins = document.getElementById('fs-flip-mins');
+  const fsFlipSecs = document.getElementById('fs-flip-secs');
+  const fsTaskTitle = document.getElementById('fs-task-title');
+  const fsPhaseLabel = document.getElementById('fs-phase-label');
+  const fsIconStart = document.getElementById('fs-icon-start');
+
+  if (fsFlipMins) fsFlipMins.textContent = minsStr;
+  if (fsFlipSecs) fsFlipSecs.textContent = secsStr;
+  if (fsTaskTitle) {
+    fsTaskTitle.textContent = state.activeTask ? `${state.activeTask.subject}: ${state.activeTask.title}` : 'Lütfen bir görev seçin veya serbest odaklanın';
+  }
+  if (fsIconStart) {
+    fsIconStart.textContent = state.status === 'running' ? '❚❚' : '▶';
+  }
+
   // Hourglass bar
   const hourglassBar = document.getElementById('pomo-hourglass-progressbar');
   if (hourglassBar) {
@@ -1545,28 +1561,50 @@ function bindEvents() {
   if (inputCustomShortBreakMins) inputCustomShortBreakMins.addEventListener('input', updateCustomDurationsFromInputs);
   if (inputCustomLongBreakMins) inputCustomLongBreakMins.addEventListener('input', updateCustomDurationsFromInputs);
 
-  // --- BOTTOM ACTION TOOLBAR HANDLERS ---
+  // --- BOTTOM ACTION TOOLBAR & FULLSCREEN FOCUS HANDLERS ---
   const btnToolbarFullscreen = document.getElementById('btn-toolbar-fullscreen');
   const btnToolbarTimerType = document.getElementById('btn-toolbar-timer-type');
   const btnToolbarAmbientSound = document.getElementById('btn-toolbar-ambient-sound');
 
-  const modalTimerType = document.getElementById('modal-timer-type');
-  const btnCancelTimerType = document.getElementById('btn-cancel-timer-type');
-  const btnConfirmTimerType = document.getElementById('btn-confirm-timer-type');
-  const timerTypeCards = document.querySelectorAll('#timer-type-card-options .timer-type-card');
-  let selectedTimerMode = 'countdown';
+  const viewFullscreenFocus = document.getElementById('view-fullscreen-focus');
+  const btnCloseFullscreenFocus = document.getElementById('btn-close-fullscreen-focus');
+  const btnFsToggleStart = document.getElementById('btn-fs-toggle-start');
 
-  if (btnToolbarFullscreen) {
+  if (btnToolbarFullscreen && viewFullscreenFocus) {
     btnToolbarFullscreen.addEventListener('click', () => {
+      viewFullscreenFocus.classList.remove('hidden');
       if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(err => {
-          console.warn('Fullscreen error:', err);
-        });
-      } else {
-        if (document.exitFullscreen) document.exitFullscreen();
+        document.documentElement.requestFullscreen().catch(err => console.warn(err));
+      }
+      updatePomodoroUI(pomodoroEngine.getState());
+    });
+  }
+
+  if (btnCloseFullscreenFocus && viewFullscreenFocus) {
+    btnCloseFullscreenFocus.addEventListener('click', () => {
+      viewFullscreenFocus.classList.add('hidden');
+      if (document.fullscreenElement && document.exitFullscreen) {
+        document.exitFullscreen();
       }
     });
   }
+
+  if (btnFsToggleStart) {
+    btnFsToggleStart.addEventListener('click', () => {
+      soundEngine.init();
+      if (pomodoroEngine.status === 'idle') {
+        pomodoroEngine.startPhase(pomodoroEngine.phase);
+      } else {
+        pomodoroEngine.togglePause();
+      }
+    });
+  }
+
+  document.addEventListener('fullscreenchange', () => {
+    if (!document.fullscreenElement && viewFullscreenFocus) {
+      viewFullscreenFocus.classList.add('hidden');
+    }
+  });
 
   if (btnToolbarTimerType && modalTimerType) {
     btnToolbarTimerType.addEventListener('click', () => {
