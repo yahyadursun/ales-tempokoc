@@ -859,11 +859,12 @@
                 <!-- Clock Styles Selector -->
                 <div class="space-y-1">
                   <span class="text-[11px] text-slate-400 font-semibold">⏰ Saat Modeli Seçin:</span>
-                  <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-[11px] font-semibold" id="clock-style-selector">
+                  <div class="grid grid-cols-2 sm:grid-cols-5 gap-1.5 text-[11px] font-semibold" id="clock-style-selector">
                     <button data-clock-style="neon" class="clock-style-btn active p-2 rounded-xl bg-emerald-600 text-white transition cursor-pointer">⭕ Neon Ring</button>
                     <button data-clock-style="minimal" class="clock-style-btn p-2 rounded-xl bg-slate-950 text-slate-300 hover:bg-slate-800 border border-slate-800 transition cursor-pointer">🔲 Minimal</button>
                     <button data-clock-style="hourglass" class="clock-style-btn p-2 rounded-xl bg-slate-950 text-slate-300 hover:bg-slate-800 border border-slate-800 transition cursor-pointer">⏳ Kum Saati</button>
                     <button data-clock-style="flip" class="clock-style-btn p-2 rounded-xl bg-slate-950 text-slate-300 hover:bg-slate-800 border border-slate-800 transition cursor-pointer">🔢 Retro Flip</button>
+                    <button data-clock-style="analog" class="clock-style-btn p-2 rounded-xl bg-slate-950 text-slate-300 hover:bg-slate-800 border border-slate-800 transition cursor-pointer col-span-2 sm:col-span-1">🕰️ Akrep & Yelkovan</button>
                   </div>
                 </div>
 
@@ -963,6 +964,36 @@
                   <span class="pomo-cycles-badge-alt px-3 py-1 rounded-full bg-slate-800 text-slate-300 font-mono text-xs border border-slate-700">
                     Pomodoro #1
                   </span>
+                </div>
+
+                <!-- Style 5: Klasik Analog Clock Container (Akrep & Yelkovan) -->
+                <div class="pomo-analog-container hidden flex-col items-center justify-center space-y-4 my-2">
+                  <div class="relative w-56 h-56 rounded-full bg-slate-950 border-4 border-slate-800 shadow-2xl flex items-center justify-center p-2">
+                    <!-- Dial Ticks (12, 3, 6, 9) -->
+                    <span class="absolute top-2.5 text-xs font-mono font-bold text-slate-400">12</span>
+                    <span class="absolute right-3.5 text-xs font-mono font-bold text-slate-400">3</span>
+                    <span class="absolute bottom-2.5 text-xs font-mono font-bold text-slate-400">6</span>
+                    <span class="absolute left-3.5 text-xs font-mono font-bold text-slate-400">9</span>
+
+                    <!-- Minute Hand (Yelkovan - Longer Emerald Hand) -->
+                    <div id="analog-hand-minute" class="absolute bottom-1/2 left-1/2 w-1.5 h-20 bg-emerald-400 rounded-full origin-bottom transform transition-all duration-300 -translate-x-1/2 shadow-lg z-20"></div>
+
+                    <!-- Hour Hand (Akrep - Shorter & Thicker Indigo Hand) -->
+                    <div id="analog-hand-hour" class="absolute bottom-1/2 left-1/2 w-2.5 h-14 bg-indigo-400 rounded-full origin-bottom transform transition-all duration-300 -translate-x-1/2 shadow-md z-10"></div>
+
+                    <!-- Second Hand (Saniye İğnesi - Thin Red Line) -->
+                    <div id="analog-hand-second" class="absolute bottom-1/2 left-1/2 w-0.5 h-22 bg-rose-500 rounded-full origin-bottom transform transition-all duration-100 -translate-x-1/2 shadow-sm z-30"></div>
+
+                    <!-- Center Pivot Pin -->
+                    <div class="w-4 h-4 rounded-full bg-white border-2 border-slate-950 shadow-md z-40"></div>
+                  </div>
+
+                  <div class="flex flex-col items-center space-y-1">
+                    <span class="pomo-phase-label-alt text-xs font-bold uppercase tracking-wider text-rose-400">ODAKLANMA ZAMANI</span>
+                    <div class="pomo-display-digits-alt font-mono font-black text-2xl tracking-tight text-white">
+                      25:00
+                    </div>
+                  </div>
                 </div>
 
                 <!-- Action Controls Deck -->

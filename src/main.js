@@ -604,6 +604,24 @@ function updatePomodoroUI(state) {
     fsIconStart.textContent = state.status === 'running' ? '❚❚' : '▶';
   }
 
+  // Analog Clock Hands Rotation (Akrep & Yelkovan)
+  const analogMinute = document.getElementById('analog-hand-minute');
+  const analogHour = document.getElementById('analog-hand-hour');
+  const analogSecond = document.getElementById('analog-hand-second');
+
+  if (analogMinute || analogHour || analogSecond) {
+    const mins = Math.floor(state.remainingSeconds / 60);
+    const secs = Math.floor(state.remainingSeconds % 60);
+
+    const secDeg = (secs / 60) * 360;
+    const minDeg = ((mins % 60) / 60) * 360 + (secs / 60) * 6;
+    const hourDeg = ((mins / 60) % 12) * 30 + (mins / 60) * 0.5;
+
+    if (analogSecond) analogSecond.style.transform = `translateX(-50%) rotate(${secDeg}deg)`;
+    if (analogMinute) analogMinute.style.transform = `translateX(-50%) rotate(${minDeg}deg)`;
+    if (analogHour) analogHour.style.transform = `translateX(-50%) rotate(${hourDeg}deg)`;
+  }
+
   // Hourglass bar
   const hourglassBar = document.getElementById('pomo-hourglass-progressbar');
   if (hourglassBar) {

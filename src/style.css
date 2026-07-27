@@ -202,3 +202,11 @@ body.theme-sunset #pomo-display-digits {
 .clock-style-hourglass .pomo-hourglass-container {
   display: flex !important;
 }
+
+/* Style: Analog Clock (Akrep & Yelkovan) */
+.clock-style-analog .pomo-visual-ring-wrapper {
+  display: none !important;
+}
+.clock-style-analog .pomo-analog-container {
+  display: flex !important;
+}
