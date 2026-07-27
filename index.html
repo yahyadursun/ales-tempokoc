@@ -78,6 +78,18 @@
               <span class="hidden md:inline">Geçmiş Raporlar</span>
             </button>
 
+            <!-- Interactive Live Local Time Clock Widget (Available across Exam & Pomodoro pages) -->
+            <button id="btn-live-local-clock" class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-amber-500/50 text-xs font-mono text-slate-300 shadow-md flex-shrink-0 transition cursor-pointer group" title="Yerel Saat (Modelini değiştirmek için tıkla)">
+              <div id="local-clock-container" class="flex items-center gap-2">
+                <span class="text-amber-400 text-sm animate-pulse">🕒</span>
+                <div class="flex flex-col text-left leading-none space-y-0.5">
+                  <span id="local-clock-time" class="font-bold text-white tracking-wider text-xs">00:00:00</span>
+                  <span id="local-clock-date" class="text-[9px] text-slate-400">Yükleniyor...</span>
+                </div>
+              </div>
+              <span class="text-[9px] text-slate-500 group-hover:text-amber-400 transition font-sans">⚙️</span>
+            </button>
+
             <button id="btn-open-settings" class="p-2.5 rounded-xl bg-slate-800/70 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/50 transition flex items-center gap-2 text-sm font-medium" title="Ayarlar">
               <span>⚙️</span>
               <span class="hidden md:inline">Ayarlar</span>
@@ -1393,6 +1405,77 @@
 
         <div class="flex justify-end">
           <button id="btn-done-ambient-modal" class="px-6 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs cursor-pointer">
+            Tamam
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- YEREL SAAT MODELİ SEÇİM MODALI -->
+    <div id="modal-local-clock-style" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md animate-fade-in select-none">
+      <div class="bg-[#18181f] border border-slate-800 rounded-3xl max-w-sm w-full p-6 space-y-6 shadow-2xl">
+        <div class="text-center space-y-1">
+          <h3 class="font-outfit font-bold text-lg text-white">
+            🕒 Yerel Saat Modeli Seçin
+          </h3>
+          <p class="text-xs text-slate-400">
+            Sitenin sağ üst köşesinde görünecek canlı saat modelini belirleyin.
+          </p>
+        </div>
+
+        <!-- Options -->
+        <div class="space-y-2.5" id="local-clock-options-container">
+          <!-- Model 1: Digital Standard -->
+          <div data-local-style="digital" class="local-clock-option active p-3 rounded-2xl bg-[#22222b] border-2 border-amber-500/80 cursor-pointer flex items-center justify-between transition hover:border-amber-400">
+            <div class="flex items-center gap-3">
+              <span class="text-xl">📟</span>
+              <div>
+                <div class="font-bold text-xs text-white">Standart Dijital</div>
+                <div class="text-[10px] text-slate-400 font-mono">23:16:45 | 27 Tem Pzt</div>
+              </div>
+            </div>
+            <span class="check-icon text-amber-400 font-bold">✓</span>
+          </div>
+
+          <!-- Model 2: Analog Akrep & Yelkovan -->
+          <div data-local-style="analog" class="local-clock-option p-3 rounded-2xl bg-[#22222b] border-2 border-slate-800 cursor-pointer flex items-center justify-between transition hover:border-amber-400">
+            <div class="flex items-center gap-3">
+              <span class="text-xl">🕰️</span>
+              <div>
+                <div class="font-bold text-xs text-white">Klasik Akrep & Yelkovan</div>
+                <div class="text-[10px] text-slate-400">Mini Dairesel Analog Saat</div>
+              </div>
+            </div>
+            <span class="check-icon text-amber-400 font-bold hidden">✓</span>
+          </div>
+
+          <!-- Model 3: Retro Flip Cards -->
+          <div data-local-style="flip" class="local-clock-option p-3 rounded-2xl bg-[#22222b] border-2 border-slate-800 cursor-pointer flex items-center justify-between transition hover:border-amber-400">
+            <div class="flex items-center gap-3">
+              <span class="text-xl">🔢</span>
+              <div>
+                <div class="font-bold text-xs text-white">Retro Flip Kartlar</div>
+                <div class="text-[10px] text-slate-400 font-mono">[23] : [16] : [45]</div>
+              </div>
+            </div>
+            <span class="check-icon text-amber-400 font-bold hidden">✓</span>
+          </div>
+
+          <!-- Model 4: Minimal Line -->
+          <div data-local-style="minimal" class="local-clock-option p-3 rounded-2xl bg-[#22222b] border-2 border-slate-800 cursor-pointer flex items-center justify-between transition hover:border-amber-400">
+            <div class="flex items-center gap-3">
+              <span class="text-xl">🌿</span>
+              <div>
+                <div class="font-bold text-xs text-white">Minimalist Kompakt</div>
+                <div class="text-[10px] text-slate-400 font-mono">23:16 • Pazartesi</div>
+              </div>
+            </div>
+            <span class="check-icon text-amber-400 font-bold hidden">✓</span>
+          </div>
+        </div>
+
+        <div class="flex justify-end pt-2 border-t border-slate-800">
+          <button id="btn-close-local-clock-modal" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs cursor-pointer">
             Tamam
           </button>
         </div>

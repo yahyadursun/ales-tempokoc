@@ -200,6 +200,9 @@ function initApp() {
   const savedAppMode = StorageManager.getAppModePreference();
   setAppMode(savedAppMode || 'focustodo');
 
+  // Start Live Real-Time Local Clock Widget
+  startLiveLocalClock();
+
   // Notification permission lazy prompt
   if ('Notification' in window && Notification.permission === 'default') {
     Notification.requestPermission();
@@ -1746,6 +1749,49 @@ function bindEvents() {
     });
   }
 
+  // Local Clock Style Modal Handlers
+  const btnLiveLocalClock = document.getElementById('btn-live-local-clock');
+  const modalLocalClockStyle = document.getElementById('modal-local-clock-style');
+  const btnCloseLocalClockModal = document.getElementById('btn-close-local-clock-modal');
+  const localClockOptions = document.querySelectorAll('#local-clock-options-container .local-clock-option');
+
+  if (btnLiveLocalClock && modalLocalClockStyle) {
+    btnLiveLocalClock.addEventListener('click', () => {
+      updateLocalClockModalUI(currentLocalClockStyle);
+      modalLocalClockStyle.classList.remove('hidden');
+    });
+  }
+
+  if (btnCloseLocalClockModal && modalLocalClockStyle) {
+    btnCloseLocalClockModal.addEventListener('click', () => {
+      modalLocalClockStyle.classList.add('hidden');
+    });
+  }
+
+  localClockOptions.forEach(opt => {
+    opt.addEventListener('click', () => {
+      const style = opt.dataset.localStyle;
+      currentLocalClockStyle = style;
+      StorageManager.saveLocalClockStylePreference(style);
+      updateLocalClockModalUI(style);
+      renderLocalClockUI();
+    });
+  });
+
+  function updateLocalClockModalUI(activeStyle) {
+    localClockOptions.forEach(opt => {
+      const isMatch = opt.dataset.localStyle === activeStyle;
+      const checkIcon = opt.querySelector('.check-icon');
+      if (isMatch) {
+        opt.className = 'local-clock-option active p-3 rounded-2xl bg-[#22222b] border-2 border-amber-500/80 cursor-pointer flex items-center justify-between transition hover:border-amber-400';
+        if (checkIcon) checkIcon.classList.remove('hidden');
+      } else {
+        opt.className = 'local-clock-option p-3 rounded-2xl bg-[#22222b] border-2 border-slate-800 cursor-pointer flex items-center justify-between transition hover:border-amber-400';
+        if (checkIcon) checkIcon.classList.add('hidden');
+      }
+    });
+  }
+
   // Global Keyboard Shortcuts
   window.addEventListener('keydown', handleKeyboardShortcuts);
 }
@@ -1834,6 +1880,69 @@ function handleKeyboardShortcuts(e) {
       }
     }
   }
+}
+
+// --- LIVE LOCAL REAL-TIME CLOCK WIDGET (4 USER SELECTABLE MODELS) ---
+let currentLocalClockStyle = StorageManager.getLocalClockStylePreference();
+
+function renderLocalClockUI() {
+  const container = document.getElementById('local-clock-container');
+  if (!container) return;
+
+  const now = new Date();
+  const hours = now.getHours().toString().padStart(2, '0');
+  const mins = now.getMinutes().toString().padStart(2, '0');
+  const secs = now.getSeconds().toString().padStart(2, '0');
+  const dateStr = now.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', weekday: 'short' });
+  const fullDayStr = now.toLocaleDateString('tr-TR', { weekday: 'long' });
+
+  if (currentLocalClockStyle === 'digital') {
+    container.innerHTML = `
+      <span class="text-amber-400 text-sm animate-pulse">🕒</span>
+      <div class="flex flex-col text-left leading-none space-y-0.5">
+        <span class="font-bold text-white tracking-wider text-xs font-mono">${hours}:${mins}:${secs}</span>
+        <span class="text-[9px] text-slate-400 font-sans">${dateStr}</span>
+      </div>
+    `;
+  } else if (currentLocalClockStyle === 'analog') {
+    const secDeg = (now.getSeconds() / 60) * 360;
+    const minDeg = ((now.getMinutes() + now.getSeconds() / 60) / 60) * 360;
+    const hourDeg = (((now.getHours() % 12) + now.getMinutes() / 60) / 12) * 360;
+
+    container.innerHTML = `
+      <div class="relative w-7 h-7 rounded-full bg-slate-950 border border-slate-700 flex items-center justify-center shadow-inner flex-shrink-0">
+        <div class="absolute bottom-1/2 left-1/2 w-0.5 h-2.5 bg-emerald-400 rounded origin-bottom transform -translate-x-1/2" style="transform: translateX(-50%) rotate(${minDeg}deg)"></div>
+        <div class="absolute bottom-1/2 left-1/2 w-1 h-2 bg-indigo-400 rounded origin-bottom transform -translate-x-1/2" style="transform: translateX(-50%) rotate(${hourDeg}deg)"></div>
+        <div class="absolute bottom-1/2 left-1/2 w-[1px] h-3 bg-rose-500 rounded origin-bottom transform -translate-x-1/2" style="transform: translateX(-50%) rotate(${secDeg}deg)"></div>
+        <div class="w-1 h-1 rounded-full bg-white z-10"></div>
+      </div>
+      <div class="flex flex-col text-left leading-none space-y-0.5">
+        <span class="font-bold text-white tracking-wider text-xs font-mono">${hours}:${mins}</span>
+        <span class="text-[9px] text-amber-400 font-bold">${dateStr}</span>
+      </div>
+    `;
+  } else if (currentLocalClockStyle === 'flip') {
+    container.innerHTML = `
+      <div class="flex items-center gap-1 font-mono font-bold text-xs">
+        <span class="px-1.5 py-0.5 rounded bg-slate-950 border border-slate-800 text-white">${hours}</span>
+        <span class="text-amber-400 animate-pulse">:</span>
+        <span class="px-1.5 py-0.5 rounded bg-slate-950 border border-slate-800 text-white">${mins}</span>
+        <span class="text-amber-400 animate-pulse">:</span>
+        <span class="px-1.5 py-0.5 rounded bg-slate-950 border border-slate-800 text-amber-300">${secs}</span>
+      </div>
+    `;
+  } else if (currentLocalClockStyle === 'minimal') {
+    container.innerHTML = `
+      <span class="text-amber-400 text-xs">🌿</span>
+      <span class="font-mono font-bold text-xs text-white">${hours}:${mins}</span>
+      <span class="text-slate-500 text-[10px]">| ${fullDayStr}</span>
+    `;
+  }
+}
+
+function startLiveLocalClock() {
+  renderLocalClockUI();
+  setInterval(renderLocalClockUI, 1000);
 }
 
 // Boot App
