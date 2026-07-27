@@ -867,18 +867,25 @@ function handleKeyboardShortcuts(e) {
   }
 
   if (timerEngine.status === 'running' || timerEngine.status === 'paused') {
-    if (e.code === 'Space') {
+    // Çözdüm / Sonraki (D tuşu, Sağ Ok, Aşağı Ok, Enter)
+    if (e.code === 'KeyD' || e.code === 'ArrowRight' || e.code === 'ArrowDown' || e.code === 'Enter') {
       e.preventDefault();
       soundEngine.playQuestionComplete();
       timerEngine.markSolved();
-    } else if (e.code === 'KeyB') {
+    } 
+    // Boş / Pas (B tuşu)
+    else if (e.code === 'KeyB') {
       e.preventDefault();
       soundEngine.playSkipSound();
       timerEngine.markSkipped();
-    } else if (e.code === 'KeyP') {
+    } 
+    // Duraklat / Devam Et (Boşluk tuşu / Space veya P)
+    else if (e.code === 'Space' || e.code === 'KeyP') {
       e.preventDefault();
       timerEngine.togglePause();
-    } else if (e.code === 'KeyR') {
+    } 
+    // Sıfırla (R tuşu)
+    else if (e.code === 'KeyR') {
       e.preventDefault();
       if (confirm('Testi sıfırlamak istiyor musunuz?')) {
         timerEngine.resetSession();
