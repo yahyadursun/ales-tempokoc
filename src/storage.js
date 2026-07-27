@@ -1,8 +1,11 @@
-// LocalStorage Management for ALES & YÖK Sınavları TempoKoç
+// LocalStorage Management for TempoKoç (Sınav Pacer & Focus To-Do)
 
 const STORAGE_KEYS = {
   SETTINGS: 'ales_pacer_settings_v2',
   HISTORY: 'ales_pacer_history_v2',
+  TASKS: 'tempokoc_tasks_v1',
+  POMODORO_SETTINGS: 'tempokoc_pomodoro_settings_v1',
+  DAILY_STATS: 'tempokoc_daily_stats_v1',
 };
 
 const DEFAULT_SETTINGS = {
@@ -27,6 +30,14 @@ const DEFAULT_SETTINGS = {
     yks_tyt: { name: 'YKS - TYT', totalQuestions: 120, targetSeconds: 83, totalExamMinutes: 165, category: 'YKS', desc: '120 Soru | 165 Dk (2 Sa 45 Dk)' },
     custom: { name: 'Özel Mod / Serbest', totalQuestions: 20, targetSeconds: 60, totalExamMinutes: 30, category: 'Özel', desc: 'Özelleştirilebilir Sınav' },
   }
+};
+
+const DEFAULT_POMODORO_SETTINGS = {
+  workMins: 25,
+  shortBreakMins: 5,
+  longBreakMins: 15,
+  autoStartBreaks: true,
+  autoStartPomodoros: false,
 };
 
 export class StorageManager {
@@ -54,6 +65,7 @@ export class StorageManager {
     }
   }
 
+  // --- EXAM HISTORY ---
   static getHistory() {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.HISTORY);
@@ -72,8 +84,7 @@ export class StorageManager {
         date: new Date().toISOString(),
         ...sessionData
       };
-      history.unshift(newSession); // Add newest first
-      // Keep up to 100 sessions
+      history.unshift(newSession);
       if (history.length > 100) history.pop();
       localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(history));
       return newSession;
@@ -97,6 +108,128 @@ export class StorageManager {
       localStorage.removeItem(STORAGE_KEYS.HISTORY);
     } catch (e) {
       console.error('Failed to clear history:', e);
+    }
+  }
+
+  // --- FOCUS TO-DO TASKS ---
+  static getTasks() {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.TASKS);
+      if (!data) {
+        // Initial sample tasks for user
+        const sampleTasks = [
+          { id: 'task_1', title: 'Matematik - Üslü Sayılar 30 Soru', subject: 'Matematik', estPomodoros: 2, donePomodoros: 1, completed: false },
+          { id: 'task_2', title: 'Paragraf Çözümü (ALES Sözel)', subject: 'Türkçe', estPomodoros: 3, donePomodoros: 3, completed: true },
+          { id: 'task_3', title: 'İngilizce Kelime Ezberi (YDS/YÖKDİL)', subject: 'İngilizce', estPomodoros: 2, donePomodoros: 0, completed: false },
+        ];
+        this.saveTasks(sampleTasks);
+        return sampleTasks;
+      }
+      return JSON.parse(data);
+    } catch (e) {
+      console.warn('Failed to load tasks:', e);
+      return [];
+    }
+  }
+
+  static saveTasks(tasks) {
+    try {
+      localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(tasks));
+    } catch (e) {
+      console.error('Failed to save tasks:', e);
+    }
+  }
+
+  static addTask(taskData) {
+    const tasks = this.getTasks();
+    const newTask = {
+      id: 'task_' + Date.now(),
+      title: taskData.title,
+      subject: taskData.subject || 'Genel',
+      estPomodoros: taskData.estPomodoros || 1,
+      donePomodoros: 0,
+      completed: false,
+      createdAt: new Date().toISOString()
+    };
+    tasks.unshift(newTask);
+    this.saveTasks(tasks);
+    return newTask;
+  }
+
+  static toggleTask(taskId) {
+    const tasks = this.getTasks();
+    const task = tasks.find(t => t.id === taskId);
+    if (task) {
+      task.completed = !task.completed;
+      this.saveTasks(tasks);
+    }
+    return tasks;
+  }
+
+  static deleteTask(taskId) {
+    const tasks = this.getTasks().filter(t => t.id !== taskId);
+    this.saveTasks(tasks);
+    return tasks;
+  }
+
+  static incrementTaskPomodoro(taskId) {
+    const tasks = this.getTasks();
+    const task = tasks.find(t => t.id === taskId);
+    if (task) {
+      task.donePomodoros = (task.donePomodoros || 0) + 1;
+      if (task.donePomodoros >= task.estPomodoros) {
+        task.completed = true;
+      }
+      this.saveTasks(tasks);
+    }
+    return tasks;
+  }
+
+  // --- POMODORO SETTINGS & DAILY STATS ---
+  static getPomodoroSettings() {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.POMODORO_SETTINGS);
+      return data ? { ...DEFAULT_POMODORO_SETTINGS, ...JSON.parse(data) } : DEFAULT_POMODORO_SETTINGS;
+    } catch (e) {
+      return DEFAULT_POMODORO_SETTINGS;
+    }
+  }
+
+  static savePomodoroSettings(settings) {
+    try {
+      localStorage.setItem(STORAGE_KEYS.POMODORO_SETTINGS, JSON.stringify(settings));
+    } catch (e) {
+      console.error('Failed to save pomodoro settings:', e);
+    }
+  }
+
+  static getDailyStats() {
+    const todayKey = new Date().toISOString().split('T')[0];
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.DAILY_STATS);
+      const allStats = data ? JSON.parse(data) : {};
+      return allStats[todayKey] || { date: todayKey, totalWorkSec: 0, pomodorosDone: 0 };
+    } catch (e) {
+      return { date: todayKey, totalWorkSec: 0, pomodorosDone: 0 };
+    }
+  }
+
+  static recordFocusTime(workSeconds) {
+    const todayKey = new Date().toISOString().split('T')[0];
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.DAILY_STATS);
+      const allStats = data ? JSON.parse(data) : {};
+      const current = allStats[todayKey] || { date: todayKey, totalWorkSec: 0, pomodorosDone: 0 };
+      
+      current.totalWorkSec += workSeconds;
+      current.pomodorosDone += 1;
+      allStats[todayKey] = current;
+
+      localStorage.setItem(STORAGE_KEYS.DAILY_STATS, JSON.stringify(allStats));
+      return current;
+    } catch (e) {
+      console.error('Failed to record focus time:', e);
+      return null;
     }
   }
 }

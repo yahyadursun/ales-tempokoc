@@ -49,6 +49,19 @@
             </div>
           </div>
 
+          <!-- Main App Modes Switcher Tabs (Header) -->
+          <div class="hidden sm:flex items-center gap-1.5 p-1 bg-slate-950/80 rounded-xl border border-slate-800 text-xs font-bold shadow-inner">
+            <button id="btn-mode-exam" class="app-mode-tab active px-3.5 py-1.5 rounded-lg transition text-white bg-gradient-to-r from-indigo-600 to-purple-600 shadow flex items-center gap-1.5 cursor-pointer">
+              <span>🏆</span>
+              <span>Sınav & Deneme</span>
+            </button>
+            <button id="btn-mode-focustodo" class="app-mode-tab px-3.5 py-1.5 rounded-lg transition text-slate-400 hover:text-white hover:bg-slate-800 flex items-center gap-1.5 cursor-pointer">
+              <span>🎯</span>
+              <span>Focus To-Do</span>
+              <span class="px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 text-[9px]">YENİ</span>
+            </button>
+          </div>
+
           <!-- Action Controls Header -->
           <div class="flex items-center gap-2 sm:gap-3">
             <button id="btn-mute-toggle" class="p-2.5 rounded-xl bg-slate-800/70 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/50 transition flex items-center gap-2 text-sm font-medium" title="Sesi Aç/Kapat">
@@ -674,6 +687,188 @@
             <button id="btn-restart-new" class="px-8 py-4 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-outfit font-bold text-base shadow-xl shadow-indigo-500/20 hover:scale-105 transition cursor-pointer">
               🔄 Yeni Pratik Başlat
             </button>
+          </div>
+        </section>
+
+
+        <!-- FOCUS TO-DO VIEW (POMODORO & TASK MANAGEMENT) -->
+        <section id="view-focustodo" class="hidden w-full max-w-5xl mx-auto space-y-8 animate-fade-in">
+          <!-- Focus To-Do Header Banner & Daily Stats Bar -->
+          <div class="bg-gradient-to-r from-slate-900/90 via-slate-900/95 to-slate-950/90 rounded-3xl p-6 border border-slate-800 shadow-2xl backdrop-blur-xl space-y-6">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs font-semibold">
+                  <span>🎯 Odaklanma & Pomodoro Yönetimi</span>
+                </div>
+                <h2 class="text-2xl sm:text-3xl font-outfit font-black text-white mt-1">
+                  Günlük Çalışma & <span class="bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">Görev Koçu</span>
+                </h2>
+              </div>
+
+              <!-- Quick Pomodoro Preset Selectors -->
+              <div class="flex items-center gap-2 bg-slate-950 p-1.5 rounded-2xl border border-slate-800 text-xs font-mono">
+                <button data-pomo-preset="classic" class="pomo-preset-btn active px-3 py-1.5 rounded-xl bg-emerald-600 text-white font-bold transition cursor-pointer">25/5 Dk (Klasik)</button>
+                <button data-pomo-preset="deep" class="pomo-preset-btn px-3 py-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer">50/10 Dk (Derin Odak)</button>
+              </div>
+            </div>
+
+            <!-- Daily Productivity Stats Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-slate-800/80 pt-4">
+              <div class="bg-slate-950/60 p-3.5 rounded-2xl border border-slate-800/80 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xl font-bold border border-emerald-500/30">
+                  ⏱️
+                </div>
+                <div>
+                  <div class="text-[11px] text-slate-400 font-medium">Bugünkü Toplam Odaklanma</div>
+                  <div class="text-lg font-outfit font-black text-white font-mono" id="stat-today-focus-time">00:00:00</div>
+                </div>
+              </div>
+
+              <div class="bg-slate-950/60 p-3.5 rounded-2xl border border-slate-800/80 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center text-xl font-bold border border-rose-500/30">
+                  🍅
+                </div>
+                <div>
+                  <div class="text-[11px] text-slate-400 font-medium">Tamamlanan Pomodoro</div>
+                  <div class="text-lg font-outfit font-black text-white font-mono" id="stat-today-pomodoros">0 🍅</div>
+                </div>
+              </div>
+
+              <div class="bg-slate-950/60 p-3.5 rounded-2xl border border-slate-800/80 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-xl font-bold border border-indigo-500/30">
+                  ✅
+                </div>
+                <div>
+                  <div class="text-[11px] text-slate-400 font-medium">Tamamlanan Görevler</div>
+                  <div class="text-lg font-outfit font-black text-white font-mono" id="stat-today-tasks">0 / 0 Görev</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Main Focus To-Do Grid (2 Columns) -->
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- LEFT COLUMN: 📝 GÖREV LİSTESİ & YÖNETİMİ (7 cols) -->
+            <div class="lg:col-span-7 space-y-6">
+              
+              <!-- Add New Task Card -->
+              <div class="bg-slate-900/80 rounded-3xl p-6 border border-slate-800 shadow-xl backdrop-blur-xl space-y-4">
+                <h3 class="font-outfit font-bold text-lg text-white flex items-center justify-between">
+                  <span class="flex items-center gap-2"><span>📝</span> Yeni Görev / Konu Ekle</span>
+                  <span class="text-xs text-slate-400 font-normal">Focus To-Do</span>
+                </h3>
+
+                <form id="form-add-task" class="space-y-4">
+                  <div class="space-y-1">
+                    <input type="text" id="input-task-title" placeholder="Görev başlığı (örn: Matematik - Üslü Sayılar 30 Soru)..." required class="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/80 transition">
+                  </div>
+
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <!-- Subject Category Selector -->
+                    <select id="select-task-subject" class="px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs font-semibold text-slate-200 focus:outline-none focus:border-emerald-500/80 cursor-pointer">
+                      <option value="Matematik">📐 Matematik</option>
+                      <option value="Türkçe">📖 Türkçe / Paragraf</option>
+                      <option value="İngilizce">🌐 İngilizce (YDS/YÖKDİL)</option>
+                      <option value="Fen/Sağlık">🩺 Fen / Tıp / Sağlık</option>
+                      <option value="Sosyal">🏛️ Sosyal Bilimler</option>
+                      <option value="Genel" selected>📌 Genel Çalışma</option>
+                    </select>
+
+                    <!-- Estimated Pomodoros Selector -->
+                    <select id="select-task-est-pomo" class="px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs font-semibold text-slate-200 focus:outline-none focus:border-emerald-500/80 cursor-pointer">
+                      <option value="1">🍅 1 Pomodoro (25 Dk)</option>
+                      <option value="2" selected>🍅🍅 2 Pomodoro (50 Dk)</option>
+                      <option value="3">🍅🍅🍅 3 Pomodoro (75 Dk)</option>
+                      <option value="4">🍅🍅🍅🍅 4 Pomodoro (100 Dk)</option>
+                      <option value="5">🍅🍅🍅🍅🍅 5 Pomodoro (125 Dk)</option>
+                    </select>
+                  </div>
+
+                  <button type="submit" class="w-full py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-outfit font-bold text-sm shadow-lg shadow-emerald-500/20 transition cursor-pointer flex items-center justify-center gap-2">
+                    <span>➕</span> Görevi Listeye Ekle
+                  </button>
+                </form>
+              </div>
+
+              <!-- Task List Filter & Cards -->
+              <div class="bg-slate-900/80 rounded-3xl p-6 border border-slate-800 shadow-xl backdrop-blur-xl space-y-4">
+                <div class="flex items-center justify-between flex-wrap gap-2 border-b border-slate-800 pb-3">
+                  <h3 class="font-outfit font-bold text-base text-white flex items-center gap-2">
+                    <span>📋</span> Çalışma Görevlerin
+                  </h3>
+                  
+                  <div class="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 text-[11px] font-semibold" id="task-filter-tabs">
+                    <button data-filter="all" class="task-tab active px-2.5 py-1 rounded-lg bg-emerald-600 text-white cursor-pointer">Tümü</button>
+                    <button data-filter="active" class="task-tab px-2.5 py-1 rounded-lg text-slate-400 hover:text-white cursor-pointer">Devam Edenler</button>
+                    <button data-filter="completed" class="task-tab px-2.5 py-1 rounded-lg text-slate-400 hover:text-white cursor-pointer">Tamamlananlar</button>
+                  </div>
+                </div>
+
+                <!-- Task Cards Container -->
+                <div class="space-y-3 max-h-96 overflow-y-auto custom-scrollbar pr-1" id="tasks-container">
+                  <!-- Injected via JS -->
+                </div>
+              </div>
+
+            </div>
+
+            <!-- RIGHT COLUMN: ⏱️ POMODORO FOCUS TIMER (5 cols) -->
+            <div class="lg:col-span-5 space-y-6">
+              <div class="bg-slate-900/90 rounded-3xl p-6 border border-slate-800 shadow-2xl backdrop-blur-2xl flex flex-col items-center justify-between text-center space-y-6 relative overflow-hidden">
+                
+                <!-- Selected Task Header Ribbon -->
+                <div class="w-full bg-slate-950/80 p-3 rounded-2xl border border-slate-800/80 text-left space-y-1">
+                  <span class="text-[10px] uppercase font-bold text-emerald-400 tracking-wider">🎯 Aktif Odaklanılan Görev:</span>
+                  <div id="pomo-active-task-title" class="font-outfit font-bold text-sm text-white truncate">
+                    Lütfen bir görev seçin veya serbest odaklanın
+                  </div>
+                </div>
+
+                <!-- Phase Switcher Pills -->
+                <div class="flex items-center gap-1.5 p-1 bg-slate-950 rounded-2xl border border-slate-800 text-xs font-semibold w-full">
+                  <button data-phase="work" class="pomo-phase-btn active flex-1 py-2 rounded-xl bg-rose-600 text-white font-bold transition cursor-pointer">🍅 Çalışma</button>
+                  <button data-phase="shortBreak" class="pomo-phase-btn flex-1 py-2 rounded-xl text-slate-400 hover:text-white transition cursor-pointer">☕ Kısa Mola</button>
+                  <button data-phase="longBreak" class="pomo-phase-btn flex-1 py-2 rounded-xl text-slate-400 hover:text-white transition cursor-pointer">🌴 Uzun Mola</button>
+                </div>
+
+                <!-- SVG Circular Ring & Big Digital Timer -->
+                <div class="relative w-60 h-60 flex items-center justify-center my-2">
+                  <svg class="w-full h-full transform -rotate-90 drop-shadow-2xl" viewBox="0 0 200 200">
+                    <circle cx="100" cy="100" r="84" class="stroke-slate-800" stroke-width="12" fill="transparent"/>
+                    <circle id="pomo-ring-circle" cx="100" cy="100" r="84" class="stroke-rose-500 transition-all duration-150" stroke-width="12" stroke-dasharray="527.78" stroke-dashoffset="0" stroke-linecap="round" fill="transparent"/>
+                  </svg>
+
+                  <div class="absolute flex flex-col items-center justify-center space-y-1">
+                    <span id="pomo-phase-label" class="text-xs font-bold uppercase tracking-wider text-rose-400">ODAKLANMA ZAMANI</span>
+                    <div id="pomo-display-digits" class="font-mono font-black text-5xl tracking-tight text-white drop-shadow-md">
+                      25:00
+                    </div>
+                    <span id="pomo-cycles-badge" class="px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 font-mono text-[11px] border border-slate-700">
+                      Pomodoro #1
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Action Controls Deck -->
+                <div class="w-full grid grid-cols-2 gap-3">
+                  <button id="btn-pomo-start-toggle" class="col-span-2 py-4 rounded-2xl bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white font-outfit font-black text-base shadow-xl shadow-rose-500/20 transition active:scale-95 cursor-pointer flex items-center justify-center gap-2">
+                    <span id="icon-pomo-start">▶️</span>
+                    <span id="label-pomo-start">ODAKLANMAYI BAŞLAT</span>
+                  </button>
+
+                  <button id="btn-pomo-skip" class="py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs border border-slate-700 transition cursor-pointer flex items-center justify-center gap-1.5">
+                    <span>⏩</span> Aşamayı Atla
+                  </button>
+
+                  <button id="btn-pomo-reset" class="py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs border border-slate-700 transition cursor-pointer flex items-center justify-center gap-1.5">
+                    <span>🔄</span> Sıfırla
+                  </button>
+                </div>
+
+              </div>
+            </div>
+
           </div>
         </section>
 

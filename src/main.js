@@ -1,7 +1,8 @@
-// TempoKoç — Main Controller & Twin Timers Engine
+// TempoKoç — Main Controller & Twin Timers Engine (Exam Pacer & Focus To-Do)
 import { soundEngine } from './audio.js';
 import { StorageManager } from './storage.js';
 import { TimerEngine } from './timer.js';
+import { PomodoroEngine } from './pomodoro.js';
 import Chart from 'chart.js/auto';
 import confetti from 'canvas-confetti';
 
@@ -26,12 +27,18 @@ function formatHHMMSS(seconds) {
   return isNeg ? `+${str}` : str;
 }
 
-// DOM Element References (Safe getters)
+// Views Navigation
 const views = {
   setup: document.getElementById('view-setup'),
   active: document.getElementById('view-active'),
   results: document.getElementById('view-results'),
+  focustodo: document.getElementById('view-focustodo'),
 };
+
+// Mode Switcher Tabs
+const btnModeExam = document.getElementById('btn-mode-exam');
+const btnModeFocusTodo = document.getElementById('btn-mode-focustodo');
+let currentAppMode = 'exam'; // 'exam' or 'focustodo'
 
 // Header Controls
 const btnStartSession = document.getElementById('btn-start-session');
@@ -50,7 +57,7 @@ const modalHistory = document.getElementById('modal-history');
 const historyListContainer = document.getElementById('history-list-container');
 const btnClearHistory = document.getElementById('btn-clear-history');
 
-// Setup Inputs
+// Setup Inputs (Exam Mode)
 const inputTotalQuestions = document.getElementById('input-total-questions');
 const labelTotalQuestions = document.getElementById('label-total-questions');
 const inputTargetSeconds = document.getElementById('input-target-seconds');
@@ -125,18 +132,49 @@ const labelVolumeVal = document.getElementById('label-volume-val');
 const btnTestSound = document.getElementById('btn-test-sound');
 const btnSaveSettings = document.getElementById('btn-save-settings');
 
-// Instance Variables
+// --- FOCUS TO-DO & POMODORO ELEMENTS ---
+const formAddTask = document.getElementById('form-add-task');
+const inputTaskTitle = document.getElementById('input-task-title');
+const selectTaskSubject = document.getElementById('select-task-subject');
+const selectTaskEstPomo = document.getElementById('select-task-est-pomo');
+const tasksContainer = document.getElementById('tasks-container');
+const taskFilterTabs = document.querySelectorAll('#task-filter-tabs .task-tab');
+
+const pomoActiveTaskTitle = document.getElementById('pomo-active-task-title');
+const pomoPhaseBtns = document.querySelectorAll('.pomo-phase-btn');
+const pomoPresetBtns = document.querySelectorAll('.pomo-preset-btn');
+const pomoRingCircle = document.getElementById('pomo-ring-circle');
+const pomoPhaseLabel = document.getElementById('pomo-phase-label');
+const pomoDisplayDigits = document.getElementById('pomo-display-digits');
+const pomoCyclesBadge = document.getElementById('pomo-cycles-badge');
+const btnPomoStartToggle = document.getElementById('btn-pomo-start-toggle');
+const iconPomoStart = document.getElementById('icon-pomo-start');
+const labelPomoStart = document.getElementById('label-pomo-start');
+const btnPomoSkip = document.getElementById('btn-pomo-skip');
+const btnPomoReset = document.getElementById('btn-pomo-reset');
+
+const statTodayFocusTime = document.getElementById('stat-today-focus-time');
+const statTodayPomodoros = document.getElementById('stat-today-pomodoros');
+const statTodayTasks = document.getElementById('stat-today-tasks');
+
+// Instances
 const timerEngine = new TimerEngine();
+const pomodoroEngine = new PomodoroEngine();
+
 let currentSettings = StorageManager.getSettings();
 let currentPresetKey = 'sayisal';
 let resultsChartInstance = null;
+let currentTaskFilter = 'all';
 
 // Initialization
 function initApp() {
   applyLoadedSettings();
   setupTimerCallbacks();
+  setupPomodoroCallbacks();
   bindEvents();
   renderHistoryList();
+  renderTasks();
+  updateDailyStatsUI();
 
   // Notification permission lazy prompt
   if ('Notification' in window && Notification.permission === 'default') {
@@ -165,7 +203,7 @@ function applyLoadedSettings() {
   if (toggleCountdownBeep) toggleCountdownBeep.checked = currentSettings.countdownBeep;
   if (toggleVisualFlash) toggleVisualFlash.checked = currentSettings.visualFlash;
 
-  // Set active preset
+  // Set active preset for Exam Mode
   selectPreset(currentSettings.preset || 'sayisal');
 }
 
@@ -188,6 +226,28 @@ function updateSoundTypeButtonsUI(selectedType) {
       btn.className = 'p-2.5 rounded-xl border border-slate-800 bg-slate-950 text-slate-300 font-semibold text-xs text-left hover:border-slate-700 cursor-pointer';
     }
   });
+}
+
+// Mode Switching Logic
+function setAppMode(mode) {
+  currentAppMode = mode;
+  if (mode === 'exam') {
+    if (btnModeExam) btnModeExam.className = 'app-mode-tab active px-3.5 py-1.5 rounded-lg transition text-white bg-gradient-to-r from-indigo-600 to-purple-600 shadow flex items-center gap-1.5 cursor-pointer';
+    if (btnModeFocusTodo) btnModeFocusTodo.className = 'app-mode-tab px-3.5 py-1.5 rounded-lg transition text-slate-400 hover:text-white hover:bg-slate-800 flex items-center gap-1.5 cursor-pointer';
+    
+    if (timerEngine.status === 'running' || timerEngine.status === 'paused') {
+      showView('active');
+    } else {
+      showView('setup');
+    }
+  } else if (mode === 'focustodo') {
+    if (btnModeFocusTodo) btnModeFocusTodo.className = 'app-mode-tab active px-3.5 py-1.5 rounded-lg transition text-white bg-gradient-to-r from-emerald-600 to-teal-600 shadow flex items-center gap-1.5 cursor-pointer';
+    if (btnModeExam) btnModeExam.className = 'app-mode-tab px-3.5 py-1.5 rounded-lg transition text-slate-400 hover:text-white hover:bg-slate-800 flex items-center gap-1.5 cursor-pointer';
+    
+    showView('focustodo');
+    renderTasks(currentTaskFilter);
+    updateDailyStatsUI();
+  }
 }
 
 // Preset selection
@@ -233,7 +293,7 @@ function showView(viewName) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// Timer Engine Callbacks Setup
+// --- EXAM TIMER CALLBACKS ---
 function setupTimerCallbacks() {
   timerEngine.setCallbacks({
     onTick: (state) => updateActiveUI(state),
@@ -264,6 +324,36 @@ function setupTimerCallbacks() {
       });
       renderHistoryList();
       showResultsView(report);
+    }
+  });
+}
+
+// --- POMODORO TIMER CALLBACKS ---
+function setupPomodoroCallbacks() {
+  pomodoroEngine.setCallbacks({
+    onTick: (state) => updatePomodoroUI(state),
+    onTaskChange: (task) => {
+      if (pomoActiveTaskTitle) {
+        pomoActiveTaskTitle.textContent = task ? `${task.subject}: ${task.title}` : 'Lütfen bir görev seçin veya serbest odaklanın';
+      }
+    },
+    onWorkComplete: (workSec, task) => {
+      StorageManager.recordFocusTime(workSec);
+      if (task) {
+        StorageManager.incrementTaskPomodoro(task.id);
+        renderTasks(currentTaskFilter);
+      }
+      updateDailyStatsUI();
+    },
+    onPhaseFinish: (finishedPhase, nextPhase) => {
+      soundEngine.playSessionFinish();
+      confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+      
+      if ('Notification' in window && Notification.permission === 'granted') {
+        const title = finishedPhase === 'work' ? '🎉 Pomodoro Tamamlandı!' : '⏰ Mola Süresi Bitti!';
+        const body = finishedPhase === 'work' ? 'Tebrikler! Mola zamanı geldi.' : 'Tazeledin, tekrar ders çalışma zamanı!';
+        new Notification(title, { body, icon: '/favicon.svg' });
+      }
     }
   });
 }
@@ -398,6 +488,167 @@ function updateActiveUI(state) {
       labelExamAdvice.textContent = '💡 Harika gidiyorsunuz! Genel sınav süresini dengeli harcıyorsunuz.';
     }
   }
+}
+
+// Update Pomodoro UI
+function updatePomodoroUI(state) {
+  if (pomoDisplayDigits) {
+    pomoDisplayDigits.textContent = formatMMSS(state.remainingSeconds);
+  }
+
+  if (pomoCyclesBadge) {
+    pomoCyclesBadge.textContent = `Pomodoro #${state.completedWorkCycles + 1}`;
+  }
+
+  // Phase labels and ring colors
+  pomoPhaseBtns.forEach(btn => {
+    if (btn.dataset.phase === state.phase) {
+      if (state.phase === 'work') {
+        btn.className = 'pomo-phase-btn active flex-1 py-2 rounded-xl bg-rose-600 text-white font-bold transition cursor-pointer';
+      } else {
+        btn.className = 'pomo-phase-btn active flex-1 py-2 rounded-xl bg-teal-600 text-white font-bold transition cursor-pointer';
+      }
+    } else {
+      btn.className = 'pomo-phase-btn flex-1 py-2 rounded-xl text-slate-400 hover:text-white transition cursor-pointer';
+    }
+  });
+
+  if (pomoPhaseLabel) {
+    if (state.phase === 'work') {
+      pomoPhaseLabel.textContent = 'ODAKLANMA ZAMANI 🍅';
+      pomoPhaseLabel.className = 'text-xs font-bold uppercase tracking-wider text-rose-400';
+    } else if (state.phase === 'shortBreak') {
+      pomoPhaseLabel.textContent = 'KISA MOLA ZAMANI ☕';
+      pomoPhaseLabel.className = 'text-xs font-bold uppercase tracking-wider text-teal-400';
+    } else {
+      pomoPhaseLabel.textContent = 'UZUN MOLA ZAMANI 🌴';
+      pomoPhaseLabel.className = 'text-xs font-bold uppercase tracking-wider text-emerald-400';
+    }
+  }
+
+  if (pomoRingCircle) {
+    const totalLength = 527.78;
+    const ratio = Math.max(0, state.remainingSeconds / state.targetDuration);
+    const strokeOffset = totalLength * (1 - ratio);
+    pomoRingCircle.style.strokeDashoffset = strokeOffset;
+    if (state.phase === 'work') {
+      pomoRingCircle.setAttribute('class', 'stroke-rose-500 transition-all duration-150');
+    } else {
+      pomoRingCircle.setAttribute('class', 'stroke-teal-400 transition-all duration-150');
+    }
+  }
+
+  // Start button icon/label
+  if (labelPomoStart && iconPomoStart) {
+    if (state.status === 'running') {
+      iconPomoStart.textContent = '⏸️';
+      labelPomoStart.textContent = 'DURAKLAT';
+    } else if (state.status === 'paused') {
+      iconPomoStart.textContent = '▶️';
+      labelPomoStart.textContent = 'DEVAM ET';
+    } else {
+      iconPomoStart.textContent = '▶️';
+      labelPomoStart.textContent = state.phase === 'work' ? 'ODAKLANMAYI BAŞLAT' : 'MOLAYI BAŞLAT';
+    }
+  }
+}
+
+// Render Focus To-Do Tasks List
+function renderTasks(filter = 'all') {
+  currentTaskFilter = filter;
+  if (!tasksContainer) return;
+  let tasks = StorageManager.getTasks();
+  
+  if (filter === 'active') tasks = tasks.filter(t => !t.completed);
+  else if (filter === 'completed') tasks = tasks.filter(t => t.completed);
+
+  if (tasks.length === 0) {
+    tasksContainer.innerHTML = '<p class="text-xs text-slate-500 italic text-center py-6">Bu filtreye uygun görev bulunamadı.</p>';
+    return;
+  }
+
+  tasksContainer.innerHTML = tasks.map(t => {
+    const isCompleted = t.completed;
+    const isSelected = pomodoroEngine.activeTask && pomodoroEngine.activeTask.id === t.id;
+
+    let pomoBadges = '';
+    const est = t.estPomodoros || 1;
+    const done = t.donePomodoros || 0;
+    for (let i = 0; i < est; i++) {
+      if (i < done) pomoBadges += '🍅';
+      else pomoBadges += '⚪';
+    }
+
+    return `
+      <div class="p-3.5 rounded-2xl bg-slate-950/70 border ${isSelected ? 'border-emerald-500/80 bg-emerald-950/20' : 'border-slate-800'} flex items-center justify-between gap-3 hover:border-slate-700 transition">
+        <div class="flex items-center gap-3 min-w-0">
+          <input type="checkbox" data-task-id="${t.id}" class="task-checkbox w-4 h-4 text-emerald-600 rounded bg-slate-900 border-slate-700 focus:ring-emerald-500 cursor-pointer" ${isCompleted ? 'checked' : ''}>
+          <div class="min-w-0 space-y-0.5">
+            <div class="flex items-center gap-2">
+              <span class="font-semibold text-xs text-white truncate ${isCompleted ? 'line-through text-slate-500' : ''}">${t.title}</span>
+              <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-400 text-[10px] font-medium flex-shrink-0">${t.subject}</span>
+            </div>
+            <div class="text-[11px] text-slate-400 font-mono flex items-center gap-1.5">
+              <span>${pomoBadges}</span>
+              <span class="text-slate-500">(${done}/${est} 🍅)</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-1.5 flex-shrink-0">
+          <button data-select-task-id="${t.id}" class="btn-select-task px-2.5 py-1 rounded-lg text-xs font-semibold ${isSelected ? 'bg-emerald-500 text-white' : 'bg-slate-800 text-emerald-300 hover:bg-slate-700'} transition cursor-pointer" title="Bu göreve odaklan">
+            ${isSelected ? '✓ Odaklanılıyor' : '🎯 Odaklan'}
+          </button>
+          <button data-delete-task-id="${t.id}" class="btn-delete-task text-slate-500 hover:text-rose-400 p-1.5 transition cursor-pointer" title="Sil">🗑️</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  document.querySelectorAll('.task-checkbox').forEach(cb => {
+    cb.addEventListener('change', (e) => {
+      const id = e.currentTarget.dataset.taskId;
+      StorageManager.toggleTask(id);
+      renderTasks(currentTaskFilter);
+      updateDailyStatsUI();
+    });
+  });
+
+  document.querySelectorAll('.btn-select-task').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const id = e.currentTarget.dataset.selectTaskId;
+      const tasks = StorageManager.getTasks();
+      const selected = tasks.find(t => t.id === id);
+      if (selected) {
+        pomodoroEngine.setActiveTask(selected);
+        renderTasks(currentTaskFilter);
+      }
+    });
+  });
+
+  document.querySelectorAll('.btn-delete-task').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const id = e.currentTarget.dataset.deleteTaskId;
+      StorageManager.deleteTask(id);
+      if (pomodoroEngine.activeTask && pomodoroEngine.activeTask.id === id) {
+        pomodoroEngine.setActiveTask(null);
+      }
+      renderTasks(currentTaskFilter);
+      updateDailyStatsUI();
+    });
+  });
+}
+
+// Update Daily Productivity Stats Cards
+function updateDailyStatsUI() {
+  const stats = StorageManager.getDailyStats();
+  const tasks = StorageManager.getTasks();
+
+  const completedTasks = tasks.filter(t => t.completed).length;
+
+  if (statTodayFocusTime) statTodayFocusTime.textContent = formatHHMMSS(stats.totalWorkSec || 0);
+  if (statTodayPomodoros) statTodayPomodoros.textContent = `${stats.pomodorosDone || 0} 🍅`;
+  if (statTodayTasks) statTodayTasks.textContent = `${completedTasks} / ${tasks.length} Görev`;
 }
 
 // Visual Flash Effect on Timeout
@@ -638,6 +889,10 @@ function renderHistoryList() {
 
 // Bind Event Listeners
 function bindEvents() {
+  // App Main Mode Switchers
+  if (btnModeExam) btnModeExam.addEventListener('click', () => setAppMode('exam'));
+  if (btnModeFocusTodo) btnModeFocusTodo.addEventListener('click', () => setAppMode('focustodo'));
+
   // Category Filter Tabs Handler
   categoryTabs.forEach(tab => {
     tab.addEventListener('click', () => {
@@ -705,7 +960,7 @@ function bindEvents() {
     });
   }
 
-  // Start Session Button
+  // Start Session Button (Exam Mode)
   if (btnStartSession) btnStartSession.addEventListener('click', startPracticeSession);
 
   // Audio Toggle
@@ -769,7 +1024,7 @@ function bindEvents() {
     });
   }
 
-  // Active View Actions
+  // Active Exam View Actions
   if (btnActionSolve) {
     btnActionSolve.addEventListener('click', () => {
       soundEngine.playQuestionComplete();
@@ -813,11 +1068,90 @@ function bindEvents() {
 
   if (btnLogoHome) {
     btnLogoHome.addEventListener('click', () => {
-      if (timerEngine.status === 'running' || timerEngine.status === 'paused') {
+      if (currentAppMode === 'exam' && (timerEngine.status === 'running' || timerEngine.status === 'paused')) {
         if (!confirm('Devam eden testiniz var. Ana ekrana dönmek istediğinize emin misiniz?')) return;
         timerEngine.resetSession();
       }
-      showView('setup');
+      setAppMode('exam');
+    });
+  }
+
+  // --- FOCUS TO-DO & POMODORO EVENTS ---
+  if (formAddTask) {
+    formAddTask.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const title = inputTaskTitle ? inputTaskTitle.value.trim() : '';
+      if (!title) return;
+
+      const subject = selectTaskSubject ? selectTaskSubject.value : 'Genel';
+      const estPomodoros = selectTaskEstPomo ? parseInt(selectTaskEstPomo.value, 10) : 2;
+
+      StorageManager.addTask({ title, subject, estPomodoros });
+      if (inputTaskTitle) inputTaskTitle.value = '';
+
+      renderTasks(currentTaskFilter);
+      updateDailyStatsUI();
+    });
+  }
+
+  taskFilterTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const filter = tab.dataset.filter;
+      taskFilterTabs.forEach(t => {
+        if (t === tab) {
+          t.className = 'task-tab active px-2.5 py-1 rounded-lg bg-emerald-600 text-white cursor-pointer';
+        } else {
+          t.className = 'task-tab px-2.5 py-1 rounded-lg text-slate-400 hover:text-white cursor-pointer';
+        }
+      });
+      renderTasks(filter);
+    });
+  });
+
+  pomoPresetBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const preset = btn.dataset.pomoPreset;
+      pomoPresetBtns.forEach(b => {
+        if (b === btn) b.className = 'pomo-preset-btn active px-3 py-1.5 rounded-xl bg-emerald-600 text-white font-bold transition cursor-pointer';
+        else b.className = 'pomo-preset-btn px-3 py-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer';
+      });
+
+      if (preset === 'classic') {
+        pomodoroEngine.setDurations({ workMins: 25, shortBreakMins: 5, longBreakMins: 15 });
+      } else if (preset === 'deep') {
+        pomodoroEngine.setDurations({ workMins: 50, shortBreakMins: 10, longBreakMins: 20 });
+      }
+      updatePomodoroUI(pomodoroEngine.getState());
+    });
+  });
+
+  pomoPhaseBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const phase = btn.dataset.phase;
+      pomodoroEngine.startPhase(phase);
+    });
+  });
+
+  if (btnPomoStartToggle) {
+    btnPomoStartToggle.addEventListener('click', () => {
+      soundEngine.init();
+      if (pomodoroEngine.status === 'idle') {
+        pomodoroEngine.startPhase(pomodoroEngine.phase);
+      } else {
+        pomodoroEngine.togglePause();
+      }
+    });
+  }
+
+  if (btnPomoSkip) {
+    btnPomoSkip.addEventListener('click', () => {
+      pomodoroEngine.skipPhase();
+    });
+  }
+
+  if (btnPomoReset) {
+    btnPomoReset.addEventListener('click', () => {
+      pomodoroEngine.resetSession();
     });
   }
 
@@ -825,7 +1159,7 @@ function bindEvents() {
   window.addEventListener('keydown', handleKeyboardShortcuts);
 }
 
-// Start Session Logic
+// Start Session Logic (Exam Mode)
 function startPracticeSession() {
   soundEngine.init();
 
@@ -866,36 +1200,47 @@ function handleKeyboardShortcuts(e) {
     return;
   }
 
-  if (timerEngine.status === 'running' || timerEngine.status === 'paused') {
-    // Çözdüm / Sonraki (D tuşu, Sağ Ok, Aşağı Ok, Enter)
-    if (e.code === 'KeyD' || e.code === 'ArrowRight' || e.code === 'ArrowDown' || e.code === 'Enter') {
-      e.preventDefault();
-      soundEngine.playQuestionComplete();
-      timerEngine.markSolved();
-    } 
-    // Boş / Pas (B tuşu)
-    else if (e.code === 'KeyB') {
-      e.preventDefault();
-      soundEngine.playSkipSound();
-      timerEngine.markSkipped();
-    } 
-    // Duraklat / Devam Et (Boşluk tuşu / Space veya P)
-    else if (e.code === 'Space' || e.code === 'KeyP') {
-      e.preventDefault();
-      timerEngine.togglePause();
-    } 
-    // Sıfırla (R tuşu)
-    else if (e.code === 'KeyR') {
-      e.preventDefault();
-      if (confirm('Testi sıfırlamak istiyor musunuz?')) {
-        timerEngine.resetSession();
-        showView('setup');
+  if (currentAppMode === 'exam') {
+    if (timerEngine.status === 'running' || timerEngine.status === 'paused') {
+      // Çözdüm / Sonraki (D tuşu, Sağ Ok, Aşağı Ok, Enter)
+      if (e.code === 'KeyD' || e.code === 'ArrowRight' || e.code === 'ArrowDown' || e.code === 'Enter') {
+        e.preventDefault();
+        soundEngine.playQuestionComplete();
+        timerEngine.markSolved();
+      } 
+      // Boş / Pas (B tuşu)
+      else if (e.code === 'KeyB') {
+        e.preventDefault();
+        soundEngine.playSkipSound();
+        timerEngine.markSkipped();
+      } 
+      // Duraklat / Devam Et (Boşluk tuşu / Space veya P)
+      else if (e.code === 'Space' || e.code === 'KeyP') {
+        e.preventDefault();
+        timerEngine.togglePause();
+      } 
+      // Sıfırla (R tuşu)
+      else if (e.code === 'KeyR') {
+        e.preventDefault();
+        if (confirm('Testi sıfırlamak istiyor musunuz?')) {
+          timerEngine.resetSession();
+          showView('setup');
+        }
+      }
+    } else if (views.setup && !views.setup.classList.contains('hidden')) {
+      if (e.code === 'Enter') {
+        e.preventDefault();
+        startPracticeSession();
       }
     }
-  } else if (views.setup && !views.setup.classList.contains('hidden')) {
-    if (e.code === 'Enter') {
+  } else if (currentAppMode === 'focustodo') {
+    if (e.code === 'Space') {
       e.preventDefault();
-      startPracticeSession();
+      if (pomodoroEngine.status === 'idle') {
+        pomodoroEngine.startPhase(pomodoroEngine.phase);
+      } else {
+        pomodoroEngine.togglePause();
+      }
     }
   }
 }
