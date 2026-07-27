@@ -196,8 +196,9 @@ function initApp() {
   const savedClockStyle = StorageManager.getClockStylePreference();
   setClockStyle(savedClockStyle);
 
-  // Set default view to Pomodoro & Focus To-Do
-  setAppMode('focustodo');
+  // Load saved app mode preference (Default: focustodo)
+  const savedAppMode = StorageManager.getAppModePreference();
+  setAppMode(savedAppMode || 'focustodo');
 
   // Notification permission lazy prompt
   if ('Notification' in window && Notification.permission === 'default') {
@@ -300,6 +301,7 @@ function updateSoundTypeButtonsUI(selectedType) {
 // Mode Switching Logic
 function setAppMode(mode) {
   currentAppMode = mode;
+  StorageManager.saveAppModePreference(mode);
   if (mode === 'exam') {
     if (btnModeExam) btnModeExam.className = 'app-mode-tab active px-3.5 py-1.5 rounded-lg transition text-white bg-gradient-to-r from-indigo-600 to-purple-600 shadow flex items-center gap-1.5 cursor-pointer';
     if (btnModeFocusTodo) btnModeFocusTodo.className = 'app-mode-tab px-3.5 py-1.5 rounded-lg transition text-slate-400 hover:text-white hover:bg-slate-800 flex items-center gap-1.5 cursor-pointer';

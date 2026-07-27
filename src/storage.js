@@ -9,6 +9,7 @@ const STORAGE_KEYS = {
   STUDY_LOGS: 'tempokoc_study_logs_v1',
   THEME_PREF: 'tempokoc_theme_pref_v1',
   CLOCK_STYLE_PREF: 'tempokoc_clock_style_pref_v1',
+  APP_MODE_PREF: 'tempokoc_app_mode_v1',
 };
 
 const DEFAULT_SETTINGS = {
@@ -405,5 +406,13 @@ export class StorageManager {
 
   static saveClockStylePreference(styleName) {
     localStorage.setItem(STORAGE_KEYS.CLOCK_STYLE_PREF, styleName);
+  }
+
+  static getAppModePreference() {
+    return localStorage.getItem(STORAGE_KEYS.APP_MODE_PREF) || 'focustodo';
+  }
+
+  static saveAppModePreference(mode) {
+    localStorage.setItem(STORAGE_KEYS.APP_MODE_PREF, mode);
   }
 }
