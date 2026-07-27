@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="tr" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ALES TempoKoç | Soru Başına Süre & Tempo Asistanı</title>
+    <meta name="description" content="ALES sınavına hazırlananlar için her soruya verilen süreyi takip eden, zaman aşımında sesli ve görsel bildirim veren tempo ve pratik web uygulaması." />
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Tailwind CSS CDN & Custom Fonts -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              outfit: ['Outfit', 'sans-serif'],
+              mono: ['JetBrains Mono', 'monospace'],
+            },
+          },
+        },
+      }
+    </script>
+    <link rel="stylesheet" href="/src/style.css">
+  </head>
+  <body class="bg-slate-950 text-slate-100 font-sans antialiased min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
+    <div id="app" class="flex flex-col min-h-screen">
+      <!-- HEADER -->
+      <header class="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <!-- Logo -->
+          <div class="flex items-center gap-3 cursor-pointer" id="btn-logo-home">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-500 flex items-center justify-center shadow-lg shadow-indigo-500/20 ring-1 ring-white/20">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="font-outfit font-extrabold text-xl tracking-tight bg-gradient-to-r from-white via-slate-100 to-indigo-200 bg-clip-text text-transparent">ALES TempoKoç</span>
+                <span class="px-2 py-0.5 text-[10px] font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded-full">v2.0</span>
+              </div>
+              <p class="text-xs text-slate-400 font-medium hidden sm:block">Soru Başına Süre & Zaman Yönetimi Koçu</p>
+            </div>
+          </div>
+
+          <!-- Action Controls Header -->
+          <div class="flex items-center gap-2 sm:gap-3">
+            <button id="btn-mute-toggle" class="p-2.5 rounded-xl bg-slate-800/70 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/50 transition flex items-center gap-2 text-sm font-medium" title="Sesi Aç/Kapat">
+              <span id="icon-audio">🔊</span>
+              <span class="hidden md:inline" id="label-audio">Ses Açık</span>
+            </button>
+            
+            <button id="btn-open-history" class="p-2.5 rounded-xl bg-slate-800/70 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/50 transition flex items-center gap-2 text-sm font-medium" title="Geçmiş Denemeler">
+              <span>📊</span>
+              <span class="hidden md:inline">Geçmiş Raporlar</span>
+            </button>
+
+            <button id="btn-open-settings" class="p-2.5 rounded-xl bg-slate-800/70 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/50 transition flex items-center gap-2 text-sm font-medium" title="Ayarlar">
+              <span>⚙️</span>
+              <span class="hidden md:inline">Ayarlar</span>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- MAIN CONTENT CONTAINER -->
+      <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col justify-center">
+        
+        <!-- SETUP VIEW (IDLE) -->
+        <section id="view-setup" class="w-full max-w-4xl mx-auto space-y-8 animate-fade-in">
+          <!-- Hero Banner -->
+          <div class="text-center space-y-3">
+            <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-semibold">
+              <span class="flex h-2 w-2 rounded-full bg-indigo-400 animate-ping"></span>
+              ALES Süre Yönetiminde Uzmanlaş
+            </div>
+            <h1 class="text-3xl sm:text-4xl md:text-5xl font-outfit font-black tracking-tight text-white">
+              Her Soru İçin Zaman <span class="bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">Uyarısı ve Tempo Takibi</span>
+            </h1>
+            <p class="text-slate-400 text-sm sm:text-base max-w-2xl mx-auto leading-relaxed">
+              ALES'te başarılı olmanın 1 numaralı kuralı tek bir soruya saplanıp kalmamaktır. Hazır modlardan birini seçin ya da kendinize özel hedef belirleyip sürenizi alışkanlığa dönüştürün!
+            </p>
+          </div>
+
+          <!-- Preset Cards Grid -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="preset-cards">
+            <!-- Sayısal Preset Card -->
+            <button data-preset="sayisal" class="preset-card active group relative p-5 rounded-2xl bg-slate-900/80 border-2 border-indigo-500/80 shadow-xl shadow-indigo-500/10 hover:border-indigo-400 transition text-left flex flex-col justify-between cursor-pointer">
+              <div class="space-y-3">
+                <div class="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-xl font-bold border border-indigo-500/30">
+                  📐
+                </div>
+                <div>
+                  <h3 class="font-outfit font-bold text-lg text-white group-hover:text-indigo-300 transition">ALES Sayısal</h3>
+                  <p class="text-xs text-slate-400 mt-1">Sayısal Mantık & Problemler</p>
+                </div>
+              </div>
+              <div class="mt-4 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs">
+                <span class="font-semibold text-slate-300">50 Soru</span>
+                <span class="px-2 py-1 rounded-lg bg-indigo-500/20 text-indigo-300 font-mono font-bold">90 Sn / Soru</span>
+              </div>
+            </button>
+
+            <!-- Sözel Preset Card -->
+            <button data-preset="sozel" class="preset-card group relative p-5 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-purple-500/50 hover:bg-slate-900/80 transition text-left flex flex-col justify-between cursor-pointer">
+              <div class="space-y-3">
+                <div class="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center text-xl font-bold border border-purple-500/30">
+                  📖
+                </div>
+                <div>
+                  <h3 class="font-outfit font-bold text-lg text-white group-hover:text-purple-300 transition">ALES Sözel</h3>
+                  <p class="text-xs text-slate-400 mt-1">Paragraf & Sözel Mantık</p>
+                </div>
+              </div>
+              <div class="mt-4 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs">
+                <span class="font-semibold text-slate-300">50 Soru</span>
+                <span class="px-2 py-1 rounded-lg bg-purple-500/20 text-purple-300 font-mono font-bold">60 Sn / Soru</span>
+              </div>
+            </button>
+
+            <!-- Eşit Ağırlık Preset Card -->
+            <button data-preset="esit_agirlik" class="preset-card group relative p-5 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-amber-500/50 hover:bg-slate-900/80 transition text-left flex flex-col justify-between cursor-pointer">
+              <div class="space-y-3">
+                <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-xl font-bold border border-amber-500/30">
+                  ⚖️
+                </div>
+                <div>
+                  <h3 class="font-outfit font-bold text-lg text-white group-hover:text-amber-300 transition">Eşit Ağırlık</h3>
+                  <p class="text-xs text-slate-400 mt-1">Karma Paragraf & Matematik</p>
+                </div>
+              </div>
+              <div class="mt-4 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs">
+                <span class="font-semibold text-slate-300">50 Soru</span>
+                <span class="px-2 py-1 rounded-lg bg-amber-500/20 text-amber-300 font-mono font-bold">75 Sn / Soru</span>
+              </div>
+            </button>
+
+            <!-- Özel Preset Card -->
+            <button data-preset="custom" class="preset-card group relative p-5 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-emerald-500/50 hover:bg-slate-900/80 transition text-left flex flex-col justify-between cursor-pointer">
+              <div class="space-y-3">
+                <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xl font-bold border border-emerald-500/30">
+                  ⚙️
+                </div>
+                <div>
+                  <h3 class="font-outfit font-bold text-lg text-white group-hover:text-emerald-300 transition">Özel Mod</h3>
+                  <p class="text-xs text-slate-400 mt-1">Kendi İdeal Süreni Ayarla</p>
+                </div>
+              </div>
+              <div class="mt-4 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs">
+                <span class="font-semibold text-slate-300" id="custom-card-qs">20 Soru</span>
+                <span class="px-2 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 font-mono font-bold" id="custom-card-sec">60 Sn / Soru</span>
+              </div>
+            </button>
+          </div>
+
+          <!-- Configuration Adjustments Panel -->
+          <div class="bg-slate-900/80 rounded-2xl p-6 border border-slate-800 space-y-6 shadow-2xl backdrop-blur-xl">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+              <h2 class="font-outfit font-bold text-lg text-white flex items-center gap-2">
+                <span>🛠️</span> Oturum Ayarlarını Özelleştir
+              </h2>
+              <span id="preset-title-badge" class="px-3 py-1 rounded-full text-xs font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                ALES Sayısal Modu
+              </span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- Total Questions Slider -->
+              <div class="space-y-2">
+                <div class="flex justify-between items-center text-sm">
+                  <label class="font-medium text-slate-300">Soru Sayısı</label>
+                  <span id="label-total-questions" class="font-mono font-bold text-indigo-400 text-base">50 Soru</span>
+                </div>
+                <input type="range" id="input-total-questions" min="5" max="100" step="5" value="50" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                <div class="flex justify-between text-[11px] text-slate-500 font-mono">
+                  <span>5 Soru (Hızlı)</span>
+                  <span>50 Soru (Bölüm)</span>
+                  <span>100 Soru (Tam Tamına)</span>
+                </div>
+              </div>
+
+              <!-- Target Seconds per Question Slider -->
+              <div class="space-y-2">
+                <div class="flex justify-between items-center text-sm">
+                  <label class="font-medium text-slate-300">Soru Başına Hedef Süre</label>
+                  <span id="label-target-seconds" class="font-mono font-bold text-indigo-400 text-base">90 Saniye (01:30)</span>
+                </div>
+                <input type="range" id="input-target-seconds" min="15" max="300" step="5" value="90" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                <div class="flex justify-between text-[11px] text-slate-500 font-mono">
+                  <span>30sn (Hız)</span>
+                  <span>60sn (Sözel)</span>
+                  <span>90sn (Sayısal)</span>
+                  <span>150sn (Zor)</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Additional Options Toggles -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-slate-800/80">
+              <!-- Auto Advance Toggle -->
+              <label class="flex items-center justify-between p-3 rounded-xl bg-slate-950/60 border border-slate-800 cursor-pointer hover:border-slate-700 transition">
+                <div class="space-y-0.5">
+                  <div class="text-xs font-semibold text-slate-200">Otomatik Geçiş</div>
+                  <div class="text-[11px] text-slate-400">Süre bitince otomatik geç</div>
+                </div>
+                <input type="checkbox" id="toggle-auto-advance" class="w-4 h-4 text-indigo-600 rounded bg-slate-800 border-slate-700 focus:ring-indigo-500">
+              </label>
+
+              <!-- Countdown Beep Toggle -->
+              <label class="flex items-center justify-between p-3 rounded-xl bg-slate-950/60 border border-slate-800 cursor-pointer hover:border-slate-700 transition">
+                <div class="space-y-0.5">
+                  <div class="text-xs font-semibold text-slate-200">Son 5sn Sesli Uyarı</div>
+                  <div class="text-[11px] text-slate-400">Geri sayım biplemesi</div>
+                </div>
+                <input type="checkbox" id="toggle-countdown-beep" checked class="w-4 h-4 text-indigo-600 rounded bg-slate-800 border-slate-700 focus:ring-indigo-500">
+              </label>
+
+              <!-- Visual Flash Toggle -->
+              <label class="flex items-center justify-between p-3 rounded-xl bg-slate-950/60 border border-slate-800 cursor-pointer hover:border-slate-700 transition">
+                <div class="space-y-0.5">
+                  <div class="text-xs font-semibold text-slate-200">Ekran Flaş Uyarısı</div>
+                  <div class="text-[11px] text-slate-400">Süre bitince ekran parlasın</div>
+                </div>
+                <input type="checkbox" id="toggle-visual-flash" checked class="w-4 h-4 text-indigo-600 rounded bg-slate-800 border-slate-700 focus:ring-indigo-500">
+              </label>
+            </div>
+          </div>
+
+          <!-- Big Start Button -->
+          <div class="flex flex-col items-center gap-3 pt-2">
+            <button id="btn-start-session" class="w-full sm:w-auto px-10 py-5 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 text-white font-outfit font-black text-xl tracking-wide shadow-2xl shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:scale-[1.02] active:scale-[0.98] transition flex items-center justify-center gap-3 cursor-pointer">
+              <span>🚀</span> PRATİĞİ / TESTİ BAŞLAT
+              <span class="text-xs px-2.5 py-1 bg-white/20 rounded-lg font-mono font-normal">Enter ↵</span>
+            </button>
+            <p class="text-xs text-slate-400 flex items-center gap-2">
+              <span>💡 Kısayollar:</span>
+              <kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-slate-300 font-mono">Space</kbd> Çözdüm |
+              <kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-slate-300 font-mono">B</kbd> Boş Bırak |
+              <kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-slate-300 font-mono">P</kbd> Duraklat
+            </p>
+          </div>
+        </section>
+
+
+        <!-- ACTIVE PACER VIEW (RUNNING / PAUSED) -->
+        <section id="view-active" class="hidden w-full max-w-4xl mx-auto space-y-6 animate-fade-in">
+          <!-- Top Status Strip -->
+          <div class="bg-slate-900/80 rounded-2xl p-4 border border-slate-800 shadow-xl backdrop-blur-md flex flex-wrap items-center justify-between gap-4">
+            <!-- Question Counter Badge -->
+            <div class="flex items-center gap-3">
+              <div class="px-3.5 py-2 rounded-xl bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-outfit font-bold text-base sm:text-lg flex items-center gap-2">
+                <span>Soru</span>
+                <span id="active-q-current" class="font-mono text-white text-xl">1</span>
+                <span class="text-indigo-400/60">/</span>
+                <span id="active-q-total" class="font-mono text-indigo-300">50</span>
+              </div>
+
+              <!-- Question Progress Bar -->
+              <div class="hidden sm:block w-36 md:w-48 bg-slate-800 h-2.5 rounded-full overflow-hidden border border-slate-700/50">
+                <div id="active-q-progressbar" class="bg-gradient-to-r from-indigo-500 to-purple-500 h-full w-0 transition-all duration-300"></div>
+              </div>
+            </div>
+
+            <!-- Session Stats Badges -->
+            <div class="flex items-center gap-4 text-xs sm:text-sm font-medium">
+              <div class="flex items-center gap-1.5 text-slate-400">
+                <span>⏱️ Toplam Süre:</span>
+                <span id="active-session-elapsed" class="font-mono font-bold text-white text-base">00:00</span>
+              </div>
+              <div id="active-pace-badge" class="px-3 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold flex items-center gap-1">
+                <span>⚡</span>
+                <span id="active-pace-text">Tempon Harika!</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Main Circular Timer Card -->
+          <div id="timer-card-wrapper" class="relative bg-slate-900/90 rounded-3xl p-6 sm:p-10 border border-slate-800/80 shadow-2xl flex flex-col items-center justify-center text-center space-y-6 overflow-hidden backdrop-blur-2xl">
+            <!-- Background Flash Glow Element -->
+            <div id="flash-overlay" class="absolute inset-0 pointer-events-none bg-rose-500/0 transition-all duration-300 z-0"></div>
+
+            <!-- Overtime Banner -->
+            <div id="overtime-banner" class="hidden z-10 w-full py-2.5 px-4 bg-rose-500/20 border border-rose-500/40 rounded-xl text-rose-300 text-xs sm:text-sm font-bold animate-pulse flex items-center justify-center gap-2">
+              <span class="text-base">⚠️</span> HEDEF SÜRE DOLDU! Aşım Süresi: <span id="overtime-banner-time" class="font-mono font-extrabold text-white text-sm bg-rose-950 px-2.5 py-0.5 rounded border border-rose-500/50">+00:00</span>
+            </div>
+
+            <!-- SVG Ring & Digital Clock Display -->
+            <div class="relative w-64 h-64 sm:w-72 sm:h-72 flex items-center justify-center my-2 z-10">
+              <!-- SVG Ring -->
+              <svg class="w-full h-full transform -rotate-90 drop-shadow-2xl" viewBox="0 0 200 200">
+                <!-- Track -->
+                <circle cx="100" cy="100" r="88" class="stroke-slate-800" stroke-width="12" fill="transparent"/>
+                <!-- Animated Progress Ring -->
+                <circle id="timer-ring-circle" cx="100" cy="100" r="88" class="stroke-emerald-400 transition-all duration-150" stroke-width="12" stroke-dasharray="552.92" stroke-dashoffset="0" stroke-linecap="round" fill="transparent"/>
+              </svg>
+
+              <!-- Central Clock Overlay -->
+              <div class="absolute flex flex-col items-center justify-center space-y-1">
+                <span id="label-time-status" class="text-xs font-bold uppercase tracking-wider text-slate-400">Kalan Süre</span>
+                <div id="display-timer-digits" class="font-mono font-black text-5xl sm:text-6xl tracking-tight text-white drop-shadow-md">
+                  01:30
+                </div>
+                
+                <!-- Live Overtime Display Badge -->
+                <div id="badge-overtime-live" class="hidden px-3 py-1 rounded-full bg-rose-500/20 border border-rose-500/40 text-rose-300 font-mono font-bold text-xs animate-pulse flex items-center gap-1">
+                  <span>⚠️ Aşım:</span>
+                  <span id="display-overtime-sec" class="font-extrabold text-white">+00:00</span>
+                </div>
+
+                <div class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800/80 border border-slate-700 text-xs font-mono text-slate-300">
+                  <span>🎯 Hedef:</span>
+                  <span id="display-target-sec" class="font-bold text-indigo-300">90 sn</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quick Action Deck Buttons -->
+            <div class="w-full max-w-xl grid grid-cols-3 gap-3 sm:gap-4 z-10">
+              <!-- Pas / Boş Button -->
+              <button id="btn-action-skip" class="px-4 py-4 rounded-2xl bg-slate-800/80 hover:bg-slate-800 text-slate-200 border border-slate-700/80 hover:border-slate-600 font-outfit font-bold text-sm sm:text-base flex flex-col items-center justify-center gap-1 transition active:scale-95 cursor-pointer shadow-lg">
+                <span class="flex items-center gap-1.5">
+                  <span class="text-lg">⏩</span> Pas / Boş
+                </span>
+                <span class="text-[10px] font-mono px-2 py-0.5 bg-slate-900 rounded text-slate-400">Tuş: B</span>
+              </button>
+
+              <!-- Pause / Resume Button -->
+              <button id="btn-action-pause" class="px-4 py-4 rounded-2xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:border-amber-500/50 font-outfit font-bold text-sm sm:text-base flex flex-col items-center justify-center gap-1 transition active:scale-95 cursor-pointer shadow-lg">
+                <span class="flex items-center gap-1.5">
+                  <span id="icon-btn-pause" class="text-lg">⏸️</span>
+                  <span id="label-btn-pause">Duraklat</span>
+                </span>
+                <span class="text-[10px] font-mono px-2 py-0.5 bg-amber-950/60 rounded text-amber-400">Tuş: P</span>
+              </button>
+
+              <!-- Çözdüm / Sonraki Button (Primary Accent) -->
+              <button id="btn-action-solve" class="col-span-1 px-4 py-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white border border-emerald-400/40 font-outfit font-black text-sm sm:text-base flex flex-col items-center justify-center gap-1 transition shadow-xl shadow-emerald-500/20 active:scale-95 cursor-pointer">
+                <span class="flex items-center gap-1.5">
+                  <span class="text-lg">✅</span> Çözdüm
+                </span>
+                <span class="text-[10px] font-mono px-2 py-0.5 bg-black/30 rounded text-emerald-100">Tuş: Space ␣</span>
+              </button>
+            </div>
+
+            <!-- Footer Toolbar Controls -->
+            <div class="flex items-center justify-between w-full pt-4 border-t border-slate-800/80 text-xs text-slate-400 z-10">
+              <button id="btn-action-prev" class="hover:text-white flex items-center gap-1 transition">
+                <span>◀</span> Önceki Soru
+              </button>
+
+              <button id="btn-action-reset" class="hover:text-rose-400 flex items-center gap-1 transition">
+                <span>🔄</span> Testi Sıfırla
+              </button>
+            </div>
+          </div>
+
+          <!-- Recent Question Logs Ribbon -->
+          <div class="bg-slate-900/60 rounded-2xl p-4 border border-slate-800/80">
+            <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 flex items-center justify-between">
+              <span>📋 Son Çözülen Sorular</span>
+              <span class="text-[11px] text-slate-500">Son Durumlar</span>
+            </h4>
+            <div id="active-log-chips" class="flex items-center gap-2 overflow-x-auto pb-2 custom-scrollbar">
+              <span class="text-xs text-slate-500 italic">Henüz soru yanıtlanmadı...</span>
+            </div>
+          </div>
+        </section>
+
+
+        <!-- FINISHED RESULTS DASHBOARD VIEW -->
+        <section id="view-results" class="hidden w-full max-w-4xl mx-auto space-y-8 animate-fade-in">
+          <!-- Summary Header Banner -->
+          <div class="bg-gradient-to-r from-indigo-900/60 via-purple-900/60 to-slate-900/80 rounded-3xl p-6 sm:p-8 border border-indigo-500/30 shadow-2xl backdrop-blur-xl text-center space-y-4 relative overflow-hidden">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-bold">
+              🎉 Pratik / Test Oturumu Tamamlandı!
+            </div>
+            <h2 class="text-3xl sm:text-4xl font-outfit font-black text-white">
+              Performans & <span class="bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent">Zaman Analiz Raporu</span>
+            </h2>
+            <p class="text-slate-300 text-sm max-w-xl mx-auto" id="results-summary-subtitle">
+              Tebrikler! Toplam 50 soruluk testi tamamladınız. Aşağıdaki grafikler hangi sorularda süre aştığınızı ve temponuzu gösterir.
+            </p>
+          </div>
+
+          <!-- Metric Cards Grid -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <!-- Metric 1: Success Pace Rate -->
+            <div class="bg-slate-900/80 rounded-2xl p-4 border border-slate-800 shadow-lg space-y-1">
+              <span class="text-xs text-slate-400 font-medium">Hedef İçi Çözüm</span>
+              <div class="text-2xl sm:text-3xl font-outfit font-black text-emerald-400" id="res-metric-ontime-rate">
+                85%
+              </div>
+              <span class="text-[11px] text-slate-500" id="res-metric-ontime-count">42 / 50 Soru</span>
+            </div>
+
+            <!-- Metric 2: Average Time per Q -->
+            <div class="bg-slate-900/80 rounded-2xl p-4 border border-slate-800 shadow-lg space-y-1">
+              <span class="text-xs text-slate-400 font-medium">Ort. Soru Süresi</span>
+              <div class="text-2xl sm:text-3xl font-outfit font-black text-indigo-400 font-mono" id="res-metric-avg-time">
+                01:12
+              </div>
+              <span class="text-[11px] text-slate-500" id="res-metric-target-comparison">Hedef: 90 sn</span>
+            </div>
+
+            <!-- Metric 3: Overtime Qs -->
+            <div class="bg-slate-900/80 rounded-2xl p-4 border border-slate-800 shadow-lg space-y-1">
+              <span class="text-xs text-slate-400 font-medium">Süre Aşımı Sorular</span>
+              <div class="text-2xl sm:text-3xl font-outfit font-black text-rose-400 font-mono" id="res-metric-overtime-count">
+                5 Soru
+              </div>
+              <span class="text-[11px] text-slate-400 font-mono" id="res-metric-overtime-total">Toplam +00:00 Aşım</span>
+            </div>
+
+            <!-- Metric 4: Skipped Qs -->
+            <div class="bg-slate-900/80 rounded-2xl p-4 border border-slate-800 shadow-lg space-y-1">
+              <span class="text-xs text-slate-400 font-medium">Boş Bırakılanlar</span>
+              <div class="text-2xl sm:text-3xl font-outfit font-black text-amber-400 font-mono" id="res-metric-skipped-count">
+                3 Soru
+              </div>
+              <span class="text-[11px] text-slate-500">Stratejik Pas</span>
+            </div>
+          </div>
+
+          <!-- Chart.js Visualization Card -->
+          <div class="bg-slate-900/80 rounded-3xl p-6 border border-slate-800 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div>
+                <h3 class="font-outfit font-bold text-lg text-white">📊 Soru Bazlı Süre Grafiği</h3>
+                <p class="text-xs text-slate-400">Kırmızı çizgiyi (Hedef Süre) aşan soruları tespit edin</p>
+              </div>
+              <span class="px-2.5 py-1 bg-slate-800 rounded-lg text-xs font-mono text-slate-300">Saniye / Soru</span>
+            </div>
+            
+            <div class="relative w-full h-72 sm:h-80">
+              <canvas id="results-chart"></canvas>
+            </div>
+          </div>
+
+          <!-- Question Breakdown Table -->
+          <div class="bg-slate-900/80 rounded-3xl p-6 border border-slate-800 shadow-2xl space-y-4">
+            <h3 class="font-outfit font-bold text-lg text-white">📝 Detaylı Soru Listesi</h3>
+            <div class="max-h-64 overflow-y-auto custom-scrollbar border border-slate-800 rounded-xl">
+              <table class="w-full text-left text-xs sm:text-sm text-slate-300">
+                <thead class="bg-slate-950/80 text-slate-400 font-semibold sticky top-0 border-b border-slate-800">
+                  <tr>
+                    <th class="p-3">Soru No</th>
+                    <th class="p-3">Harcanan Süre</th>
+                    <th class="p-3">Hedef Farkı</th>
+                    <th class="p-3">Durum</th>
+                  </tr>
+                </thead>
+                <tbody id="table-results-body" class="divide-y divide-slate-800/60 font-mono">
+                  <!-- Rows injected dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Results Actions -->
+          <div class="flex flex-wrap items-center justify-center gap-4 pt-4">
+            <button id="btn-restart-new" class="px-8 py-4 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-outfit font-bold text-base shadow-xl shadow-indigo-500/20 hover:scale-105 transition cursor-pointer">
+              🔄 Yeni Pratik Başlat
+            </button>
+          </div>
+        </section>
+
+      </main>
+
+      <!-- FOOTER -->
+      <footer class="border-t border-slate-800/60 bg-slate-950/80 py-4 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500 space-y-1">
+          <p>ALES Tempolu Soru Pacer & Kronometre — Sınavda Zamanı Lehine Çevir!</p>
+          <p class="text-[11px] text-slate-600">Her soru süresi bittiğinde sesli ve görsel bildirim uyarısı verir. Bilgiler tarayıcınızda (local storage) saklanır.</p>
+        </div>
+      </footer>
+    </div>
+
+
+    <!-- SETTINGS MODAL -->
+    <div id="modal-settings" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in">
+      <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 space-y-6 shadow-2xl">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+          <h3 class="font-outfit font-bold text-xl text-white flex items-center gap-2">
+            <span>⚙️</span> Ses & Klavye Ayarları
+          </h3>
+          <button id="btn-close-settings" class="text-slate-400 hover:text-white p-1 rounded-lg">✕</button>
+        </div>
+
+        <div class="space-y-5 text-sm">
+          <!-- Sound Type Selector -->
+          <div class="space-y-2">
+            <label class="font-medium text-slate-300">Uyarı Ses Tipi (Süre Bitince)</label>
+            <div class="grid grid-cols-2 gap-2" id="sound-type-options">
+              <button data-sound="chime" class="p-2.5 rounded-xl border border-indigo-500 bg-indigo-500/20 text-indigo-200 font-semibold text-xs text-left cursor-pointer">
+                🔔 Yumuşak Melodi (Chime)
+              </button>
+              <button data-sound="bell" class="p-2.5 rounded-xl border border-slate-800 bg-slate-950 text-slate-300 font-semibold text-xs text-left hover:border-slate-700 cursor-pointer">
+                🔔 Çan / Zil (Bell)
+              </button>
+              <button data-sound="beep" class="p-2.5 rounded-xl border border-slate-800 bg-slate-950 text-slate-300 font-semibold text-xs text-left hover:border-slate-700 cursor-pointer">
+                📟 Dijital Bip (Beep)
+              </button>
+              <button data-sound="digital" class="p-2.5 rounded-xl border border-slate-800 bg-slate-950 text-slate-300 font-semibold text-xs text-left hover:border-slate-700 cursor-pointer">
+                ⚡ Yükselen Sinyal
+              </button>
+            </div>
+          </div>
+
+          <!-- Volume Slider -->
+          <div class="space-y-2">
+            <div class="flex justify-between items-center">
+              <label class="font-medium text-slate-300">Ses Seviyesi</label>
+              <span id="label-volume-val" class="font-mono text-indigo-400 font-bold">80%</span>
+            </div>
+            <input type="range" id="input-volume" min="0" max="100" value="80" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+          </div>
+
+          <!-- Test Sound Button -->
+          <div>
+            <button id="btn-test-sound" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-700 transition flex items-center justify-center gap-2 cursor-pointer">
+              🔊 Seçili Sesi Test Et
+            </button>
+          </div>
+
+          <!-- Shortcuts Overview -->
+          <div class="pt-4 border-t border-slate-800 space-y-2">
+            <h4 class="font-bold text-xs uppercase tracking-wider text-slate-400">⌨️ Klavye Kısayolları Rehberi</h4>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <div class="p-2 bg-slate-950 rounded-lg border border-slate-800 flex items-center justify-between">
+                <span class="text-slate-400">Sonraki Soru:</span>
+                <kbd class="font-mono bg-slate-800 px-2 py-0.5 rounded text-indigo-300">Space</kbd>
+              </div>
+              <div class="p-2 bg-slate-950 rounded-lg border border-slate-800 flex items-center justify-between">
+                <span class="text-slate-400">Boş / Pas:</span>
+                <kbd class="font-mono bg-slate-800 px-2 py-0.5 rounded text-amber-300">B</kbd>
+              </div>
+              <div class="p-2 bg-slate-950 rounded-lg border border-slate-800 flex items-center justify-between">
+                <span class="text-slate-400">Duraklat:</span>
+                <kbd class="font-mono bg-slate-800 px-2 py-0.5 rounded text-purple-300">P</kbd>
+              </div>
+              <div class="p-2 bg-slate-950 rounded-lg border border-slate-800 flex items-center justify-between">
+                <span class="text-slate-400">Sıfırla:</span>
+                <kbd class="font-mono bg-slate-800 px-2 py-0.5 rounded text-rose-300">R</kbd>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-4 border-t border-slate-800 flex justify-end">
+          <button id="btn-save-settings" class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm cursor-pointer">
+            Tamam / Kaydet
+          </button>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- HISTORY MODAL -->
+    <div id="modal-history" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in">
+      <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-2xl w-full p-6 space-y-6 shadow-2xl">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+          <h3 class="font-outfit font-bold text-xl text-white flex items-center gap-2">
+            <span>📊</span> Geçmiş Pratik ve Deneme Kayıtları
+          </h3>
+          <button id="btn-close-history" class="text-slate-400 hover:text-white p-1 rounded-lg">✕</button>
+        </div>
+
+        <div class="max-h-80 overflow-y-auto custom-scrollbar space-y-3" id="history-list-container">
+          <!-- History Items populated via JS -->
+        </div>
+
+        <div class="flex items-center justify-between pt-4 border-t border-slate-800">
+          <button id="btn-clear-history" class="text-xs text-rose-400 hover:text-rose-300 transition">
+            🗑️ Geçmişi Temizle
+          </button>
+          <button id="btn-close-history-modal" class="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs cursor-pointer">
+            Kapat
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN APP SCRIPT -->
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
