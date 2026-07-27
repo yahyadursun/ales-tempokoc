@@ -1367,6 +1367,78 @@ function bindEvents() {
     });
   }
 
+  // Task Dropdown Selector Ribbon Handler
+  const btnPomoTaskSelector = document.getElementById('btn-pomo-task-selector');
+  const pomoTaskDropdown = document.getElementById('pomo-task-dropdown');
+
+  function renderTaskDropdown() {
+    if (!pomoTaskDropdown) return;
+    const tasks = StorageManager.getTasks();
+    const currentActiveId = pomodoroEngine.activeTask ? pomodoroEngine.activeTask.id : null;
+
+    let optionsHTML = `
+      <button data-dropdown-task-id="none" class="w-full text-left p-2.5 rounded-xl hover:bg-slate-900 transition flex items-center justify-between text-xs cursor-pointer ${!currentActiveId ? 'bg-slate-900 border border-emerald-500/40 text-emerald-300 font-bold' : 'text-slate-300'}">
+        <span class="flex items-center gap-2">
+          <span>🌐</span>
+          <span>Serbest Odaklan (Görev Seçilmedi)</span>
+        </span>
+        ${!currentActiveId ? '✓' : ''}
+      </button>
+    `;
+
+    if (tasks.length > 0) {
+      optionsHTML += '<div class="my-1 border-t border-slate-800"></div>';
+      optionsHTML += tasks.map(t => {
+        const isSelected = currentActiveId === t.id;
+        const done = t.donePomodoros || 0;
+        const est = t.estPomodoros || 1;
+
+        return `
+          <button data-dropdown-task-id="${t.id}" class="w-full text-left p-2.5 rounded-xl hover:bg-slate-900 transition flex items-center justify-between text-xs cursor-pointer ${isSelected ? 'bg-emerald-950/40 border border-emerald-500/60 text-white font-bold' : 'text-slate-300'}">
+            <div class="space-y-0.5 truncate pr-2">
+              <div class="flex items-center gap-2">
+                <span class="truncate ${t.completed ? 'line-through text-slate-500' : ''}">${t.title}</span>
+                <span class="px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 text-[9px]">${t.subject}</span>
+              </div>
+              <div class="text-[10px] text-slate-500 font-mono">(${done}/${est} 🍅)</div>
+            </div>
+            ${isSelected ? '<span class="text-emerald-400 font-bold">✓</span>' : ''}
+          </button>
+        `;
+      }).join('');
+    }
+
+    pomoTaskDropdown.innerHTML = optionsHTML;
+
+    pomoTaskDropdown.querySelectorAll('button[data-dropdown-task-id]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const taskId = e.currentTarget.dataset.dropdownTaskId;
+        if (taskId === 'none') {
+          pomodoroEngine.setActiveTask(null);
+        } else {
+          const found = tasks.find(t => t.id === taskId);
+          if (found) pomodoroEngine.setActiveTask(found);
+        }
+        renderTasks(currentTaskFilter);
+        pomoTaskDropdown.classList.add('hidden');
+      });
+    });
+  }
+
+  if (btnPomoTaskSelector && pomoTaskDropdown) {
+    btnPomoTaskSelector.addEventListener('click', (e) => {
+      e.stopPropagation();
+      renderTaskDropdown();
+      pomoTaskDropdown.classList.toggle('hidden');
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!pomoTaskDropdown.contains(e.target) && !btnPomoTaskSelector.contains(e.target)) {
+        pomoTaskDropdown.classList.add('hidden');
+      }
+    });
+  }
+
   taskFilterTabs.forEach(tab => {
     tab.addEventListener('click', () => {
       const filter = tab.dataset.filter;
