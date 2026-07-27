@@ -231,6 +231,13 @@ function applyLoadedSettings() {
 
 function setTheme(themeName) {
   document.body.className = `theme-${themeName} bg-slate-950 text-slate-100 font-sans antialiased min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white`;
+
+  const fsFocus = document.getElementById('view-fullscreen-focus');
+  if (fsFocus) {
+    const isHidden = fsFocus.classList.contains('hidden');
+    fsFocus.className = `fs-theme-${themeName} ${isHidden ? 'hidden' : ''} fixed inset-0 z-50 text-white flex flex-col justify-between p-6 sm:p-10 animate-fade-in select-none`;
+  }
+
   StorageManager.saveThemePreference(themeName);
 
   themeBtns.forEach(btn => {
@@ -238,6 +245,15 @@ function setTheme(themeName) {
       btn.className = 'theme-btn active px-2.5 py-1.5 rounded-xl bg-slate-800 text-white border border-slate-700 transition cursor-pointer flex-shrink-0 font-bold';
     } else {
       btn.className = 'theme-btn px-2.5 py-1.5 rounded-xl bg-slate-950/70 text-slate-400 border border-slate-800 hover:bg-slate-900 transition cursor-pointer flex-shrink-0';
+    }
+  });
+
+  const fsThemeBtns = document.querySelectorAll('#fs-theme-selector .fs-theme-btn');
+  fsThemeBtns.forEach(btn => {
+    if (btn.dataset.fsTheme === themeName) {
+      btn.className = 'fs-theme-btn active px-2.5 py-1 rounded-xl bg-white/30 text-white font-bold transition cursor-pointer';
+    } else {
+      btn.className = 'fs-theme-btn px-2.5 py-1 rounded-xl hover:bg-white/20 text-slate-300 transition cursor-pointer';
     }
   });
 }
@@ -1599,6 +1615,13 @@ function bindEvents() {
       }
     });
   }
+
+  const fsThemeBtns = document.querySelectorAll('#fs-theme-selector .fs-theme-btn');
+  fsThemeBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      setTheme(btn.dataset.fsTheme);
+    });
+  });
 
   document.addEventListener('fullscreenchange', () => {
     if (!document.fullscreenElement && viewFullscreenFocus) {
