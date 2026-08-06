@@ -31,55 +31,54 @@
     <div id="app" class="flex flex-col min-h-screen">
       <!-- HEADER -->
       <header class="border-b border-slate-800/80 bg-slate-900/70 backdrop-blur-xl sticky top-0 z-40">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <!-- Logo -->
-          <div class="flex items-center gap-3 cursor-pointer" id="btn-logo-home">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 ring-1 ring-white/20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+          <!-- Logo (Left) -->
+          <div class="flex items-center gap-3 cursor-pointer flex-shrink-0" id="btn-logo-home">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 ring-1 ring-white/20 flex-shrink-0">
               <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="10"/>
                 <polyline points="12 6 12 12 16 14"/>
               </svg>
             </div>
-            <div>
+            <div class="flex flex-col min-w-0">
               <div class="flex items-center gap-2">
-                <span class="font-outfit font-extrabold text-xl tracking-tight bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">Pomodoro ile TempoKoç</span>
-                <span class="px-2 py-0.5 text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full">v3.0</span>
+                <span class="font-outfit font-extrabold text-lg sm:text-xl tracking-tight bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent whitespace-nowrap">Pomodoro ile TempoKoç</span>
+                <span class="px-2 py-0.5 text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full flex-shrink-0">v3.0</span>
               </div>
-              <p class="text-xs text-slate-400 font-medium hidden sm:block">Görev Takibi, Pomodoro Odaklanma & Sınav Koçu</p>
+              <p class="text-[11px] text-slate-400 font-medium hidden lg:block truncate">Görev Takibi, Pomodoro Odaklanma & Sınav Koçu</p>
             </div>
           </div>
 
-          <!-- Main App Modes Switcher Tabs (Header) -->
-          <div class="hidden sm:flex items-center gap-1.5 p-1 bg-slate-950/80 rounded-xl border border-slate-800 text-xs font-bold shadow-inner">
-            <button id="btn-mode-focustodo" class="app-mode-tab active px-3.5 py-1.5 rounded-lg transition text-white bg-gradient-to-r from-emerald-600 to-teal-600 shadow flex items-center gap-1.5 cursor-pointer">
+          <!-- Main App Navigation Tabs (Center) -->
+          <div class="hidden md:flex items-center gap-1.5 p-1 bg-slate-950/80 rounded-2xl border border-slate-800/80 text-xs font-bold shadow-inner">
+            <button id="btn-mode-focustodo" data-route="#/focustodo" class="nav-link active px-3.5 py-2 rounded-xl transition text-white bg-gradient-to-r from-emerald-600 to-teal-600 shadow-md flex items-center gap-2 cursor-pointer">
               <span>🎯</span>
               <span>Pomodoro & Focus</span>
             </button>
-            <button id="btn-mode-exam" class="app-mode-tab px-3.5 py-1.5 rounded-lg transition text-slate-400 hover:text-white hover:bg-slate-800 flex items-center gap-1.5 cursor-pointer">
+            <button id="btn-mode-exam" data-route="#/exam" class="nav-link px-3.5 py-2 rounded-xl transition text-slate-400 hover:text-white hover:bg-slate-800 flex items-center gap-2 cursor-pointer">
               <span>🏆</span>
-              <span>Sınav & Deneme Modu</span>
+              <span>Sınav & Deneme</span>
+            </button>
+            <button id="btn-mode-analytics" data-route="#/analytics" class="nav-link px-3.5 py-2 rounded-xl transition text-slate-400 hover:text-white hover:bg-slate-800 flex items-center gap-2 cursor-pointer">
+              <span>📈</span>
+              <span>Gelişim Analizi</span>
             </button>
           </div>
 
-          <!-- Action Controls Header -->
-          <div class="flex items-center gap-2 sm:gap-3">
-            <button id="btn-open-analytics" class="p-2.5 rounded-xl bg-slate-800/70 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/50 transition flex items-center gap-2 text-sm font-medium" title="Gelişim Analizleri">
-              <span>📈</span>
-              <span class="hidden md:inline">Gelişim Analizleri</span>
-            </button>
-
-            <button id="btn-mute-toggle" class="p-2.5 rounded-xl bg-slate-800/70 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/50 transition flex items-center gap-2 text-sm font-medium" title="Sesi Aç/Kapat">
+          <!-- Action Controls Header & User Widget (Right) -->
+          <div class="flex items-center gap-2 sm:gap-2.5 flex-shrink-0">
+            <button id="btn-mute-toggle" class="p-2.5 rounded-xl bg-slate-800/70 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/50 transition flex items-center gap-1.5 text-xs font-medium cursor-pointer" title="Sesi Aç/Kapat">
               <span id="icon-audio">🔊</span>
-              <span class="hidden md:inline" id="label-audio">Ses Açık</span>
+              <span class="hidden lg:inline" id="label-audio">Ses</span>
             </button>
             
-            <button id="btn-open-history" class="p-2.5 rounded-xl bg-slate-800/70 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/50 transition flex items-center gap-2 text-sm font-medium" title="Geçmiş Denemeler">
+            <button id="btn-open-history" class="p-2.5 rounded-xl bg-slate-800/70 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/50 transition flex items-center gap-1.5 text-xs font-medium cursor-pointer" title="Geçmiş Denemeler">
               <span>📊</span>
-              <span class="hidden md:inline">Geçmiş Raporlar</span>
+              <span class="hidden lg:inline">Raporlar</span>
             </button>
 
-            <!-- Interactive Live Local Time Clock Widget (Available across Exam & Pomodoro pages) -->
-            <button id="btn-live-local-clock" class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-amber-500/50 text-xs font-mono text-slate-300 shadow-md flex-shrink-0 transition cursor-pointer group" title="Yerel Saat (Modelini değiştirmek için tıkla)">
+            <!-- Live Local Clock Widget -->
+            <button id="btn-live-local-clock" class="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-amber-500/50 text-xs font-mono text-slate-300 shadow-md flex-shrink-0 transition cursor-pointer group" title="Yerel Saat">
               <div id="local-clock-container" class="flex items-center gap-2">
                 <span class="text-amber-400 text-sm animate-pulse">🕒</span>
                 <div class="flex flex-col text-left leading-none space-y-0.5">
@@ -87,14 +86,30 @@
                   <span id="local-clock-date" class="text-[9px] text-slate-400">Yükleniyor...</span>
                 </div>
               </div>
-              <span class="text-[9px] text-slate-500 group-hover:text-amber-400 transition font-sans">⚙️</span>
             </button>
 
-            <button id="btn-open-settings" class="p-2.5 rounded-xl bg-slate-800/70 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/50 transition flex items-center gap-2 text-sm font-medium" title="Ayarlar">
+            <button id="btn-open-settings" class="p-2.5 rounded-xl bg-slate-800/70 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/50 transition flex items-center gap-1.5 text-xs font-medium cursor-pointer" title="Ayarlar">
               <span>⚙️</span>
-              <span class="hidden md:inline">Ayarlar</span>
             </button>
+
+            <!-- USER AUTHENTICATION / PROFILE WIDGET -->
+            <div id="header-user-widget" class="relative">
+              <!-- Dynamically populated by JS -->
+            </div>
           </div>
+        </div>
+
+        <!-- Mobile Responsive Bottom Navigation Bar for screens < md -->
+        <div class="md:hidden flex items-center justify-around p-2 bg-slate-950/90 border-t border-slate-800 text-xs font-semibold">
+          <button data-route="#/focustodo" class="nav-link px-3 py-1.5 rounded-xl flex items-center gap-1.5 text-slate-300 hover:text-white">
+            <span>🎯</span> Focus
+          </button>
+          <button data-route="#/exam" class="nav-link px-3 py-1.5 rounded-xl flex items-center gap-1.5 text-slate-300 hover:text-white">
+            <span>🏆</span> Sınav
+          </button>
+          <button data-route="#/analytics" class="nav-link px-3 py-1.5 rounded-xl flex items-center gap-1.5 text-slate-300 hover:text-white">
+            <span>📈</span> Analiz
+          </button>
         </div>
       </header>
 
@@ -1042,9 +1057,134 @@
                   </button>
                 </div>
 
+          </div>
+        </section>
+
+
+        <!-- ANALİZ VE PERFORMANS DASHBOARD GÖRÜNÜMÜ -->
+        <section id="view-analytics" class="hidden w-full max-w-5xl mx-auto space-y-8 animate-fade-in relative">
+          <!-- GUEST LOCK OVERLAY (Giriş Yapılmamışsa Görünür) -->
+          <div id="analytics-guest-overlay" class="absolute inset-0 z-30 flex flex-col items-center justify-center p-6 bg-slate-950/75 backdrop-blur-lg rounded-3xl border border-indigo-500/30 text-center animate-fade-in" style="display: none;">
+            <div class="max-w-lg p-8 rounded-3xl bg-[#141522]/95 border border-indigo-500/40 shadow-2xl space-y-6">
+              <div class="w-16 h-16 rounded-2xl bg-indigo-500/20 border border-indigo-500/40 text-indigo-400 flex items-center justify-center text-3xl mx-auto shadow-lg shadow-indigo-500/20">
+                🔒
+              </div>
+              <div class="space-y-2">
+                <h2 class="font-outfit font-extrabold text-2xl text-white">Veri Analiz Paneli Kilitli</h2>
+                <p class="text-sm text-slate-300">
+                  Çalışma sürelerinizi, ders bazlı grafiklerinizi ve günlük streak serilerinizi kayıt altına alıp analiz edebilmek için ücretsiz hesabınızı oluşturun veya giriş yapın.
+                </p>
+              </div>
+              <div class="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+                <button id="btn-analytics-guest-register" class="px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm shadow-lg shadow-emerald-600/30 transition cursor-pointer">
+                  ✨ Ücretsiz Kaydol
+                </button>
+                <button id="btn-analytics-guest-login" class="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm shadow-lg shadow-indigo-600/30 transition cursor-pointer">
+                  🔑 Giriş Yap
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- CONTENT WRAPPER -->
+          <div id="analytics-content-wrapper" class="space-y-8">
+            <!-- Header Controls & Period Tabs -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+              <div>
+                <h1 class="font-outfit font-extrabold text-2xl text-white flex items-center gap-2">
+                  <span>📈</span> Gelişim & Odak Analizi
+                </h1>
+                <p class="text-xs text-slate-400">Çalışma alışkanlıklarınızı ve ders dağılımınızı detaylı grafikle inceleyin.</p>
+              </div>
+
+              <div class="flex items-center gap-3">
+                <!-- Period Tabs -->
+                <div class="flex p-1 bg-slate-900 rounded-xl border border-slate-800 text-xs font-semibold">
+                  <button data-period="daily" class="analytics-period-btn px-3 py-1.5 rounded-lg transition text-slate-400 hover:text-white">Bugün</button>
+                  <button data-period="weekly" class="analytics-period-btn active px-3 py-1.5 rounded-lg transition text-white bg-indigo-600 shadow">Bu Hafta</button>
+                  <button data-period="monthly" class="analytics-period-btn px-3 py-1.5 rounded-lg transition text-slate-400 hover:text-white">Bu Ay</button>
+                </div>
+
+                <button id="btn-analytics-export" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-300 hover:text-white border border-slate-700 transition cursor-pointer" title="Verileri İndir (JSON)">
+                  📥 Dışa Aktar
+                </button>
               </div>
             </div>
 
+            <!-- Summary Stats Cards Grid -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div class="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between space-y-2">
+                <span class="text-xs font-medium text-slate-400">Toplam Odak Süresi</span>
+                <span id="stat-total-hours" class="font-outfit font-extrabold text-2xl text-indigo-400">0 dk</span>
+                <span class="text-[10px] text-slate-500">Tamamlanan toplam çalışma</span>
+              </div>
+              <div class="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between space-y-2">
+                <span class="text-xs font-medium text-slate-400">Pomodoro Oturumu</span>
+                <span id="stat-total-pomo" class="font-outfit font-extrabold text-2xl text-emerald-400">0</span>
+                <span class="text-[10px] text-slate-500">Bitirilen odak periyodu</span>
+              </div>
+              <div class="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between space-y-2">
+                <span class="text-xs font-medium text-slate-400">Öğrenme Serisi (Streak)</span>
+                <span id="stat-streak" class="font-outfit font-extrabold text-2xl text-amber-400">0 Gün</span>
+                <span class="text-[10px] text-slate-500">Kesintisiz gün serisi</span>
+              </div>
+              <div class="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between space-y-2">
+                <span class="text-xs font-medium text-slate-400">Tamamlanan Sınavlar</span>
+                <span id="stat-total-exams" class="font-outfit font-extrabold text-2xl text-cyan-400">0</span>
+                <span class="text-[10px] text-slate-500">Çözülen deneme oturumu</span>
+              </div>
+            </div>
+
+            <!-- Charts Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <!-- Trend Bar Chart (2 cols) -->
+              <div class="lg:col-span-2 p-6 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-4">
+                <h3 class="font-outfit font-bold text-sm text-slate-200 flex items-center gap-2">
+                  <span>📊</span> Odaklanma Süresi Trendi (Dk)
+                </h3>
+                <div class="h-64 relative">
+                  <canvas id="chart-analytics-trend"></canvas>
+                </div>
+              </div>
+
+              <!-- Subject Doughnut Chart (1 col) -->
+              <div class="p-6 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-4">
+                <h3 class="font-outfit font-bold text-sm text-slate-200 flex items-center gap-2">
+                  <span>🎯</span> Ders Dağılımı
+                </h3>
+                <div class="h-64 relative">
+                  <canvas id="chart-analytics-subject"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <!-- Recent Activity Table -->
+            <div class="p-6 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-4">
+              <div class="flex items-center justify-between">
+                <h3 class="font-outfit font-bold text-sm text-slate-200 flex items-center gap-2">
+                  <span>📝</span> Son Çalışma Günlükleri
+                </h3>
+                <button id="btn-analytics-clear" class="text-xs text-rose-400 hover:text-rose-300 font-semibold cursor-pointer">
+                  Verileri Temizle
+                </button>
+              </div>
+
+              <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr class="border-b border-slate-800 text-slate-400 font-semibold">
+                      <th class="py-2.5 px-4">Tarih</th>
+                      <th class="py-2.5 px-4">Görev / Konu</th>
+                      <th class="py-2.5 px-4">Süre</th>
+                      <th class="py-2.5 px-4">Kategori</th>
+                    </tr>
+                  </thead>
+                  <tbody id="analytics-activity-tbody">
+                    <!-- Dynamic rows -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -1479,6 +1619,69 @@
             Tamam
           </button>
         </div>
+      </div>
+    </div>
+
+    <!-- KULLANICI GİRİŞ & KAYIT MODALI -->
+    <div id="modal-auth" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md animate-fade-in select-none">
+      <div class="bg-[#181822] border border-slate-800 rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-6 shadow-2xl relative">
+        <button id="btn-close-auth-modal" class="absolute top-4 right-4 p-2 text-slate-400 hover:text-white rounded-full bg-slate-800/50 hover:bg-slate-800 transition cursor-pointer">
+          ✕
+        </button>
+        
+        <div class="text-center space-y-1">
+          <h3 class="font-outfit font-extrabold text-xl text-white flex items-center justify-center gap-2">
+            <span>🎓</span> TempoKoç Hesabı
+          </h3>
+          <p class="text-xs text-slate-400">Verilerinizi kaydetmek ve analiz etmek için giriş yapın veya ücretsiz hesap açın.</p>
+        </div>
+
+        <!-- Tab Switcher (Giriş Yap / Kayıt Ol) -->
+        <div class="flex p-1 bg-slate-900 rounded-2xl border border-slate-800 font-bold text-xs">
+          <button id="tab-auth-login" class="flex-1 py-2.5 rounded-xl transition text-white bg-indigo-600 shadow cursor-pointer">
+            Giriş Yap
+          </button>
+          <button id="tab-auth-register" class="flex-1 py-2.5 rounded-xl transition text-slate-400 hover:text-white cursor-pointer">
+            Ücretsiz Kaydol
+          </button>
+        </div>
+
+        <!-- Alert / Error message container -->
+        <div id="auth-alert" class="hidden p-3.5 rounded-xl text-xs font-semibold"></div>
+
+        <!-- FORM: GİRİŞ YAP -->
+        <form id="form-auth-login" class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-300 mb-1.5">E-posta Adresi</label>
+            <input type="email" id="input-login-email" required placeholder="ornek@mail.com" class="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-800 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-300 mb-1.5">Şifre</label>
+            <input type="password" id="input-login-password" required placeholder="••••••••" class="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-800 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-sm">
+          </div>
+          <button type="submit" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-sm shadow-lg shadow-indigo-600/30 transition cursor-pointer">
+            Giriş Yap
+          </button>
+        </form>
+
+        <!-- FORM: KAYIT OL -->
+        <form id="form-auth-register" class="hidden space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-300 mb-1.5">Adınız ve Soyadınız</label>
+            <input type="text" id="input-register-name" required placeholder="Ahmet Yılmaz" class="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-800 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-300 mb-1.5">E-posta Adresi</label>
+            <input type="email" id="input-register-email" required placeholder="ornek@mail.com" class="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-800 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-300 mb-1.5">Şifre (En az 4 Karakter)</label>
+            <input type="password" id="input-register-password" required placeholder="••••••••" class="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-800 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-sm">
+          </div>
+          <button type="submit" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm shadow-lg shadow-emerald-600/30 transition cursor-pointer">
+            Hesap Oluştur & Başla
+          </button>
+        </form>
       </div>
     </div>
 

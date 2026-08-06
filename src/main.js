@@ -3,6 +3,9 @@ import { soundEngine } from './audio.js';
 import { StorageManager } from './storage.js';
 import { TimerEngine } from './timer.js';
 import { PomodoroEngine } from './pomodoro.js';
+import { AuthManager } from './auth.js';
+import { Router } from './router.js';
+import { AnalyticsManager } from './analytics.js';
 import Chart from 'chart.js/auto';
 import confetti from 'canvas-confetti';
 
@@ -33,6 +36,7 @@ const views = {
   active: document.getElementById('view-active'),
   results: document.getElementById('view-results'),
   focustodo: document.getElementById('view-focustodo'),
+  analytics: document.getElementById('view-analytics'),
 };
 
 // Mode Switcher Tabs
@@ -166,6 +170,12 @@ const btnPomoReset = document.getElementById('btn-pomo-reset');
 const themeBtns = document.querySelectorAll('#theme-selector .theme-btn');
 const clockStyleBtns = document.querySelectorAll('#clock-style-selector .clock-style-btn');
 
+// Timer Type Modal
+const modalTimerType = document.getElementById('modal-timer-type');
+const timerTypeCards = document.querySelectorAll('.timer-type-card');
+const btnCancelTimerType = document.getElementById('btn-cancel-timer-type');
+const btnConfirmTimerType = document.getElementById('btn-confirm-timer-type');
+
 const statTodayFocusTime = document.getElementById('stat-today-focus-time');
 const statTodayPomodoros = document.getElementById('stat-today-pomodoros');
 const statTodayTasks = document.getElementById('stat-today-tasks');
@@ -185,6 +195,13 @@ function initApp() {
   setupTimerCallbacks();
   setupPomodoroCallbacks();
   bindEvents();
+
+  // Auth, Analytics & Router Engine
+  renderHeaderUserWidget();
+  bindAuthEvents();
+  AnalyticsManager.init();
+  initRouter();
+
   renderHistoryList();
   renderTasks();
   updateDailyStatsUI();
@@ -195,10 +212,6 @@ function initApp() {
 
   const savedClockStyle = StorageManager.getClockStylePreference();
   setClockStyle(savedClockStyle);
-
-  // Load saved app mode preference (Default: focustodo)
-  const savedAppMode = StorageManager.getAppModePreference();
-  setAppMode(savedAppMode || 'focustodo');
 
   // Start Live Real-Time Local Clock Widget
   startLiveLocalClock();
@@ -306,21 +319,18 @@ function setAppMode(mode) {
   currentAppMode = mode;
   StorageManager.saveAppModePreference(mode);
   if (mode === 'exam') {
-    if (btnModeExam) btnModeExam.className = 'app-mode-tab active px-3.5 py-1.5 rounded-lg transition text-white bg-gradient-to-r from-indigo-600 to-purple-600 shadow flex items-center gap-1.5 cursor-pointer';
-    if (btnModeFocusTodo) btnModeFocusTodo.className = 'app-mode-tab px-3.5 py-1.5 rounded-lg transition text-slate-400 hover:text-white hover:bg-slate-800 flex items-center gap-1.5 cursor-pointer';
-    
     if (timerEngine.status === 'running' || timerEngine.status === 'paused') {
       showView('active');
     } else {
       showView('setup');
     }
   } else if (mode === 'focustodo') {
-    if (btnModeFocusTodo) btnModeFocusTodo.className = 'app-mode-tab active px-3.5 py-1.5 rounded-lg transition text-white bg-gradient-to-r from-emerald-600 to-teal-600 shadow flex items-center gap-1.5 cursor-pointer';
-    if (btnModeExam) btnModeExam.className = 'app-mode-tab px-3.5 py-1.5 rounded-lg transition text-slate-400 hover:text-white hover:bg-slate-800 flex items-center gap-1.5 cursor-pointer';
-    
     showView('focustodo');
     renderTasks(currentTaskFilter);
     updateDailyStatsUI();
+  } else if (mode === 'analytics') {
+    showView('analytics');
+    AnalyticsManager.render();
   }
 }
 
@@ -365,6 +375,184 @@ function showView(viewName) {
     }
   });
   window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Router Initialization
+function initRouter() {
+  Router.init({
+    '#/focustodo': () => {
+      currentAppMode = 'focustodo';
+      StorageManager.saveAppModePreference('focustodo');
+      showView('focustodo');
+      renderTasks(currentTaskFilter);
+      updateDailyStatsUI();
+    },
+    '#/exam': () => {
+      currentAppMode = 'exam';
+      StorageManager.saveAppModePreference('exam');
+      if (timerEngine.status === 'running' || timerEngine.status === 'paused') {
+        showView('active');
+      } else {
+        showView('setup');
+      }
+    },
+    '#/analytics': () => {
+      currentAppMode = 'analytics';
+      StorageManager.saveAppModePreference('analytics');
+      showView('analytics');
+      AnalyticsManager.render();
+    }
+  }, '#/focustodo');
+}
+
+// --- AUTH & USER PROFILE CONTROLLER ---
+function renderHeaderUserWidget() {
+  const container = document.getElementById('header-user-widget');
+  if (!container) return;
+
+  const user = AuthManager.getCurrentUser();
+  if (!user || user.isGuest) {
+    container.innerHTML = `
+      <button id="btn-header-login" class="px-3 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs shadow-md shadow-indigo-600/20 transition flex items-center gap-1.5 cursor-pointer">
+        <span>🔐</span>
+        <span>Giriş / Kaydol</span>
+      </button>
+    `;
+    const btnLogin = document.getElementById('btn-header-login');
+    if (btnLogin) {
+      btnLogin.addEventListener('click', () => openAuthModal('login'));
+    }
+  } else {
+    const initials = user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    container.innerHTML = `
+      <div class="relative group">
+        <button id="btn-header-profile" class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 transition cursor-pointer">
+          <div class="w-6 h-6 rounded-lg flex items-center justify-center text-white font-bold text-[10px] shadow-inner" style="background-color: ${user.avatarBg || '#6366f1'}">
+            ${initials}
+          </div>
+          <span class="font-bold text-xs text-white max-w-[90px] truncate hidden lg:inline">${user.name}</span>
+          <span class="text-[9px] text-slate-400">▼</span>
+        </button>
+
+        <div class="hidden group-hover:block absolute right-0 top-full pt-2 w-48 z-50 animate-fade-in">
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-2 shadow-2xl space-y-1 text-xs">
+            <div class="px-3 py-2 border-b border-slate-800">
+              <div class="font-bold text-white truncate">${user.name}</div>
+              <div class="text-[10px] text-slate-400 truncate">${user.email}</div>
+            </div>
+            <button id="menu-btn-analytics" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-800 text-slate-300 hover:text-white flex items-center gap-2 font-medium cursor-pointer">
+              <span>📈</span> Analizlerim
+            </button>
+            <button id="menu-btn-logout" class="w-full text-left px-3 py-2 rounded-xl hover:bg-rose-500/20 text-rose-400 flex items-center gap-2 font-semibold cursor-pointer">
+              <span>🚪</span> Oturumu Kapat
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const menuAnalytics = document.getElementById('menu-btn-analytics');
+    if (menuAnalytics) {
+      menuAnalytics.addEventListener('click', () => Router.navigate('#/analytics'));
+    }
+
+    const menuLogout = document.getElementById('menu-btn-logout');
+    if (menuLogout) {
+      menuLogout.addEventListener('click', () => {
+        AuthManager.logout();
+      });
+    }
+  }
+}
+
+function openAuthModal(mode = 'login') {
+  const modal = document.getElementById('modal-auth');
+  const alertEl = document.getElementById('auth-alert');
+  if (alertEl) alertEl.className = 'hidden';
+
+  const tabLogin = document.getElementById('tab-auth-login');
+  const tabRegister = document.getElementById('tab-auth-register');
+  const formLogin = document.getElementById('form-auth-login');
+  const formRegister = document.getElementById('form-auth-register');
+
+  if (mode === 'login') {
+    if (tabLogin) tabLogin.className = 'flex-1 py-2.5 rounded-xl transition text-white bg-indigo-600 shadow cursor-pointer';
+    if (tabRegister) tabRegister.className = 'flex-1 py-2.5 rounded-xl transition text-slate-400 hover:text-white cursor-pointer';
+    if (formLogin) formLogin.classList.remove('hidden');
+    if (formRegister) formRegister.classList.add('hidden');
+  } else {
+    if (tabRegister) tabRegister.className = 'flex-1 py-2.5 rounded-xl transition text-white bg-emerald-600 shadow cursor-pointer';
+    if (tabLogin) tabLogin.className = 'flex-1 py-2.5 rounded-xl transition text-slate-400 hover:text-white cursor-pointer';
+    if (formRegister) formRegister.classList.remove('hidden');
+    if (formLogin) formLogin.classList.add('hidden');
+  }
+
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeAuthModal() {
+  const modal = document.getElementById('modal-auth');
+  if (modal) modal.classList.add('hidden');
+}
+
+function bindAuthEvents() {
+  const btnClose = document.getElementById('btn-close-auth-modal');
+  if (btnClose) btnClose.addEventListener('click', closeAuthModal);
+
+  const tabLogin = document.getElementById('tab-auth-login');
+  if (tabLogin) tabLogin.addEventListener('click', () => openAuthModal('login'));
+
+  const tabRegister = document.getElementById('tab-auth-register');
+  if (tabRegister) tabRegister.addEventListener('click', () => openAuthModal('register'));
+
+  window.addEventListener('open-auth-modal', (e) => {
+    openAuthModal(e.detail ? e.detail.mode : 'login');
+  });
+
+  const formLogin = document.getElementById('form-auth-login');
+  if (formLogin) {
+    formLogin.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const email = document.getElementById('input-login-email').value;
+      const password = document.getElementById('input-login-password').value;
+      const alertEl = document.getElementById('auth-alert');
+
+      const res = AuthManager.login({ email, password });
+      if (res.success) {
+        closeAuthModal();
+      } else if (alertEl) {
+        alertEl.textContent = res.message;
+        alertEl.className = 'p-3.5 rounded-xl text-xs font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/30';
+      }
+    });
+  }
+
+  const formRegister = document.getElementById('form-auth-register');
+  if (formRegister) {
+    formRegister.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = document.getElementById('input-register-name').value;
+      const email = document.getElementById('input-register-email').value;
+      const password = document.getElementById('input-register-password').value;
+      const alertEl = document.getElementById('auth-alert');
+
+      const res = AuthManager.register({ name, email, password });
+      if (res.success) {
+        closeAuthModal();
+      } else if (alertEl) {
+        alertEl.textContent = res.message;
+        alertEl.className = 'p-3.5 rounded-xl text-xs font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/30';
+      }
+    });
+  }
+
+  AuthManager.onAuthChange(() => {
+    renderHeaderUserWidget();
+    renderTasks(currentTaskFilter);
+    updateDailyStatsUI();
+    renderHistoryList();
+    AnalyticsManager.render();
+  });
 }
 
 // --- EXAM TIMER CALLBACKS ---
@@ -1187,17 +1375,10 @@ function renderHistoryList() {
 
 // Bind Event Listeners
 function bindEvents() {
-  // App Main Mode Switchers
-  if (btnModeExam) btnModeExam.addEventListener('click', () => setAppMode('exam'));
-  if (btnModeFocusTodo) btnModeFocusTodo.addEventListener('click', () => setAppMode('focustodo'));
+  // NOTE: Mode switching (Exam/Focus/Analytics) is handled by the Router's
+  // global click interceptor for [data-route] elements in router.js.
+  // Do NOT add duplicate listeners here for those buttons.
 
-  // Analytics Modal Listeners
-  if (btnOpenAnalytics) {
-    btnOpenAnalytics.addEventListener('click', () => {
-      if (modalAnalytics) modalAnalytics.classList.remove('hidden');
-      renderAnalyticsCharts(currentAnalyticsPeriod);
-    });
-  }
   if (btnCloseAnalytics) btnCloseAnalytics.addEventListener('click', () => modalAnalytics && modalAnalytics.classList.add('hidden'));
   if (btnCloseAnalyticsModal) btnCloseAnalyticsModal.addEventListener('click', () => modalAnalytics && modalAnalytics.classList.add('hidden'));
 
@@ -1400,7 +1581,7 @@ function bindEvents() {
         if (!confirm('Devam eden testiniz var. Ana ekrana dönmek istediğinize emin misiniz?')) return;
         timerEngine.resetSession();
       }
-      setAppMode('exam');
+      Router.navigate('#/focustodo');
     });
   }
 

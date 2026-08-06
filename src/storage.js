@@ -1,4 +1,5 @@
-// LocalStorage Management for TempoKoç (Sınav Pacer, Focus To-Do, & Progress Analytics)
+// LocalStorage Management for TempoKoç (User-Scoped Data Storage Engine)
+import { AuthManager } from './auth.js';
 
 const STORAGE_KEYS = {
   SETTINGS: 'ales_pacer_settings_v2',
@@ -16,13 +17,13 @@ const STORAGE_KEYS = {
 const DEFAULT_SETTINGS = {
   soundEnabled: true,
   soundVolume: 0.8,
-  soundType: 'chime', // 'chime', 'bell', 'beep', 'digital'
-  countdownBeep: true, // Beep during final 5 seconds
-  visualFlash: true, // Flash screen on timeout
-  showQuestionTimer: true, // Show or hide per-question timer display (Gizli Mod)
-  notifyOnTimeout: true, // Trigger sound & visual alerts when question time expires
-  autoAdvanceOnTimeout: false, // Wait for user or auto-advance
-  autoAdvanceDelay: 1.5, // seconds delay before auto-advance
+  soundType: 'chime',
+  countdownBeep: true,
+  visualFlash: true,
+  showQuestionTimer: true,
+  notifyOnTimeout: true,
+  autoAdvanceOnTimeout: false,
+  autoAdvanceDelay: 1.5,
   preset: 'sayisal',
   presets: {
     sayisal: { name: 'ALES Sayısal', totalQuestions: 50, targetSeconds: 90, totalExamMinutes: 75, category: 'ALES', desc: '50 Soru | 75 Dk Toplam Sınav' },
@@ -46,9 +47,15 @@ const DEFAULT_POMODORO_SETTINGS = {
 };
 
 export class StorageManager {
+  // Helper to scope key per logged in user
+  static getKey(baseKey) {
+    const userId = AuthManager.getUserId();
+    return `${baseKey}_usr_${userId}`;
+  }
+
   static getSettings() {
     try {
-      const data = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+      const data = localStorage.getItem(this.getKey(STORAGE_KEYS.SETTINGS));
       if (!data) return DEFAULT_SETTINGS;
       const parsed = JSON.parse(data);
       return { 
@@ -64,7 +71,7 @@ export class StorageManager {
 
   static saveSettings(settings) {
     try {
-      localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
+      localStorage.setItem(this.getKey(STORAGE_KEYS.SETTINGS), JSON.stringify(settings));
     } catch (e) {
       console.error('Failed to save settings:', e);
     }
@@ -73,7 +80,7 @@ export class StorageManager {
   // --- EXAM HISTORY ---
   static getHistory() {
     try {
-      const data = localStorage.getItem(STORAGE_KEYS.HISTORY);
+      const data = localStorage.getItem(this.getKey(STORAGE_KEYS.HISTORY));
       return data ? JSON.parse(data) : [];
     } catch (e) {
       console.warn('Failed to load history:', e);
@@ -82,6 +89,12 @@ export class StorageManager {
   }
 
   static saveSession(sessionData) {
+    // If not logged in (Guest), do NOT persist to user database
+    if (!AuthManager.isLoggedIn()) {
+      console.log('Guest session completed - not saving to persistent database');
+      return null;
+    }
+
     try {
       const history = this.getHistory();
       const newSession = {
@@ -91,9 +104,9 @@ export class StorageManager {
       };
       history.unshift(newSession);
       if (history.length > 100) history.pop();
-      localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(history));
+      localStorage.setItem(this.getKey(STORAGE_KEYS.HISTORY), JSON.stringify(history));
 
-      // Also record to study logs for progress analytics!
+      // Record to study logs for analytics
       this.recordStudyLog({
         subject: sessionData.presetName || 'Sınav Denemesi',
         durationSec: sessionData.sessionTotalElapsed || 0,
@@ -108,17 +121,19 @@ export class StorageManager {
   }
 
   static deleteSession(sessionId) {
+    if (!AuthManager.isLoggedIn()) return;
     try {
       const history = this.getHistory().filter(s => s.id !== sessionId);
-      localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(history));
+      localStorage.setItem(this.getKey(STORAGE_KEYS.HISTORY), JSON.stringify(history));
     } catch (e) {
       console.error('Failed to delete session:', e);
     }
   }
 
   static clearHistory() {
+    if (!AuthManager.isLoggedIn()) return;
     try {
-      localStorage.removeItem(STORAGE_KEYS.HISTORY);
+      localStorage.removeItem(this.getKey(STORAGE_KEYS.HISTORY));
     } catch (e) {
       console.error('Failed to clear history:', e);
     }
@@ -127,7 +142,8 @@ export class StorageManager {
   // --- FOCUS TO-DO TASKS ---
   static getTasks() {
     try {
-      const data = localStorage.getItem(STORAGE_KEYS.TASKS);
+      const key = this.getKey(STORAGE_KEYS.TASKS);
+      const data = localStorage.getItem(key);
       if (!data) {
         const sampleTasks = [
           { id: 'task_1', title: 'Matematik - Üslü Sayılar 30 Soru', subject: 'Matematik', estPomodoros: 2, donePomodoros: 1, completed: false },
@@ -146,7 +162,7 @@ export class StorageManager {
 
   static saveTasks(tasks) {
     try {
-      localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(tasks));
+      localStorage.setItem(this.getKey(STORAGE_KEYS.TASKS), JSON.stringify(tasks));
     } catch (e) {
       console.error('Failed to save tasks:', e);
     }
@@ -199,8 +215,9 @@ export class StorageManager {
 
   // --- STUDY LOGS & PROGRESS ANALYTICS ---
   static getStudyLogs() {
+    if (!AuthManager.isLoggedIn()) return [];
     try {
-      const data = localStorage.getItem(STORAGE_KEYS.STUDY_LOGS);
+      const data = localStorage.getItem(this.getKey(STORAGE_KEYS.STUDY_LOGS));
       return data ? JSON.parse(data) : [];
     } catch (e) {
       return [];
@@ -208,6 +225,12 @@ export class StorageManager {
   }
 
   static recordStudyLog({ subject = 'Genel', durationSec = 1500, type = 'pomodoro', taskId = null, taskTitle = null }) {
+    // If not logged in, skip storing logs into database
+    if (!AuthManager.isLoggedIn()) {
+      console.log('Guest user completed work - session log not stored in database');
+      return null;
+    }
+
     try {
       const logs = this.getStudyLogs();
       const now = new Date();
@@ -229,8 +252,8 @@ export class StorageManager {
       };
 
       logs.unshift(newLog);
-      if (logs.length > 1000) logs.pop(); // Keep up to 1000 logs
-      localStorage.setItem(STORAGE_KEYS.STUDY_LOGS, JSON.stringify(logs));
+      if (logs.length > 1000) logs.pop();
+      localStorage.setItem(this.getKey(STORAGE_KEYS.STUDY_LOGS), JSON.stringify(logs));
 
       this.recordFocusTime(durationSec);
       return newLog;
@@ -241,6 +264,7 @@ export class StorageManager {
   }
 
   static getStreakCount() {
+    if (!AuthManager.isLoggedIn()) return 0;
     const logs = this.getStudyLogs();
     if (logs.length === 0) return 0;
 
@@ -291,13 +315,45 @@ export class StorageManager {
     return { date: targetDate, totalSec, logsCount: logs.length, subjectMap, taskMap };
   }
 
+  static getWeeklyAnalytics() {
+    const logs = this.getStudyLogs();
+    const now = new Date();
+    const dayOfWeek = now.getDay() === 0 ? 7 : now.getDay(); // 1 = Monday
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - (dayOfWeek - 1));
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const dailyTotals = Array(7).fill(0); // Mon to Sun
+    const subjectMap = {};
+    const taskMap = {};
+    let totalSec = 0;
+
+    logs.forEach(l => {
+      const lDate = new Date(l.timestamp);
+      if (lDate >= startOfWeek) {
+        totalSec += l.durationSec;
+        let lDay = lDate.getDay() === 0 ? 6 : lDate.getDay() - 1;
+        dailyTotals[lDay] += l.durationSec;
+
+        subjectMap[l.subject] = (subjectMap[l.subject] || 0) + l.durationSec;
+        const tKey = l.taskTitle || l.subject;
+        if (!taskMap[tKey]) {
+          taskMap[tKey] = { subject: l.subject, durationSec: 0, count: 0 };
+        }
+        taskMap[tKey].durationSec += l.durationSec;
+        taskMap[tKey].count += 1;
+      }
+    });
+
+    return { dailyTotals, totalSec, subjectMap, taskMap, logsCount: logs.length };
+  }
+
   static getMonthlyAnalytics(year, month) {
     const now = new Date();
     const targetYear = year || now.getFullYear();
     const targetMonth = month || (now.getMonth() + 1);
 
     const logs = this.getStudyLogs().filter(l => l.year === targetYear && l.month === targetMonth);
-
     const daysInMonth = new Date(targetYear, targetMonth, 0).getDate();
     const dailyTotals = Array(daysInMonth).fill(0);
     const subjectMap = {};
@@ -317,38 +373,13 @@ export class StorageManager {
       taskMap[tKey].count += 1;
     });
 
-    return { year: targetYear, month: targetMonth, daysInMonth, dailyTotals, totalSec, subjectMap, taskMap };
-  }
-
-  static getYearlyAnalytics(year) {
-    const targetYear = year || new Date().getFullYear();
-    const logs = this.getStudyLogs().filter(l => l.year === targetYear);
-
-    const monthlyTotals = Array(12).fill(0);
-    const subjectMap = {};
-    const taskMap = {};
-    let totalSec = 0;
-
-    logs.forEach(l => {
-      totalSec += l.durationSec;
-      monthlyTotals[l.month - 1] += l.durationSec;
-      subjectMap[l.subject] = (subjectMap[l.subject] || 0) + l.durationSec;
-
-      const tKey = l.taskTitle || l.subject;
-      if (!taskMap[tKey]) {
-        taskMap[tKey] = { subject: l.subject, durationSec: 0, count: 0 };
-      }
-      taskMap[tKey].durationSec += l.durationSec;
-      taskMap[tKey].count += 1;
-    });
-
-    return { year: targetYear, monthlyTotals, totalSec, subjectMap, taskMap };
+    return { year: targetYear, month: targetMonth, daysInMonth, dailyTotals, totalSec, subjectMap, taskMap, logsCount: logs.length };
   }
 
   // --- POMODORO SETTINGS & THEMES ---
   static getPomodoroSettings() {
     try {
-      const data = localStorage.getItem(STORAGE_KEYS.POMODORO_SETTINGS);
+      const data = localStorage.getItem(this.getKey(STORAGE_KEYS.POMODORO_SETTINGS));
       return data ? { ...DEFAULT_POMODORO_SETTINGS, ...JSON.parse(data) } : DEFAULT_POMODORO_SETTINGS;
     } catch (e) {
       return DEFAULT_POMODORO_SETTINGS;
@@ -357,16 +388,19 @@ export class StorageManager {
 
   static savePomodoroSettings(settings) {
     try {
-      localStorage.setItem(STORAGE_KEYS.POMODORO_SETTINGS, JSON.stringify(settings));
+      localStorage.setItem(this.getKey(STORAGE_KEYS.POMODORO_SETTINGS), JSON.stringify(settings));
     } catch (e) {
       console.error('Failed to save pomodoro settings:', e);
     }
   }
 
   static getDailyStats() {
+    if (!AuthManager.isLoggedIn()) {
+      return { date: new Date().toISOString().split('T')[0], totalWorkSec: 0, pomodorosDone: 0 };
+    }
     const todayKey = new Date().toISOString().split('T')[0];
     try {
-      const data = localStorage.getItem(STORAGE_KEYS.DAILY_STATS);
+      const data = localStorage.getItem(this.getKey(STORAGE_KEYS.DAILY_STATS));
       const allStats = data ? JSON.parse(data) : {};
       return allStats[todayKey] || { date: todayKey, totalWorkSec: 0, pomodorosDone: 0 };
     } catch (e) {
@@ -375,9 +409,10 @@ export class StorageManager {
   }
 
   static recordFocusTime(workSeconds) {
+    if (!AuthManager.isLoggedIn()) return null;
     const todayKey = new Date().toISOString().split('T')[0];
     try {
-      const data = localStorage.getItem(STORAGE_KEYS.DAILY_STATS);
+      const data = localStorage.getItem(this.getKey(STORAGE_KEYS.DAILY_STATS));
       const allStats = data ? JSON.parse(data) : {};
       const current = allStats[todayKey] || { date: todayKey, totalWorkSec: 0, pomodorosDone: 0 };
       
@@ -385,7 +420,7 @@ export class StorageManager {
       current.pomodorosDone += 1;
       allStats[todayKey] = current;
 
-      localStorage.setItem(STORAGE_KEYS.DAILY_STATS, JSON.stringify(allStats));
+      localStorage.setItem(this.getKey(STORAGE_KEYS.DAILY_STATS), JSON.stringify(allStats));
       return current;
     } catch (e) {
       console.error('Failed to record focus time:', e);
@@ -394,34 +429,34 @@ export class StorageManager {
   }
 
   static getThemePreference() {
-    return localStorage.getItem(STORAGE_KEYS.THEME_PREF) || 'slate';
+    return localStorage.getItem(this.getKey(STORAGE_KEYS.THEME_PREF)) || 'slate';
   }
 
   static saveThemePreference(themeName) {
-    localStorage.setItem(STORAGE_KEYS.THEME_PREF, themeName);
+    localStorage.setItem(this.getKey(STORAGE_KEYS.THEME_PREF), themeName);
   }
 
   static getClockStylePreference() {
-    return localStorage.getItem(STORAGE_KEYS.CLOCK_STYLE_PREF) || 'neon';
+    return localStorage.getItem(this.getKey(STORAGE_KEYS.CLOCK_STYLE_PREF)) || 'neon';
   }
 
   static saveClockStylePreference(styleName) {
-    localStorage.setItem(STORAGE_KEYS.CLOCK_STYLE_PREF, styleName);
+    localStorage.setItem(this.getKey(STORAGE_KEYS.CLOCK_STYLE_PREF), styleName);
   }
 
   static getAppModePreference() {
-    return localStorage.getItem(STORAGE_KEYS.APP_MODE_PREF) || 'focustodo';
+    return localStorage.getItem(this.getKey(STORAGE_KEYS.APP_MODE_PREF)) || 'focustodo';
   }
 
   static saveAppModePreference(mode) {
-    localStorage.setItem(STORAGE_KEYS.APP_MODE_PREF, mode);
+    localStorage.setItem(this.getKey(STORAGE_KEYS.APP_MODE_PREF), mode);
   }
 
   static getLocalClockStylePreference() {
-    return localStorage.getItem(STORAGE_KEYS.LOCAL_CLOCK_STYLE_PREF) || 'digital';
+    return localStorage.getItem(this.getKey(STORAGE_KEYS.LOCAL_CLOCK_STYLE_PREF)) || 'digital';
   }
 
-  static saveLocalClockStylePreference(style) {
-    localStorage.setItem(STORAGE_KEYS.LOCAL_CLOCK_STYLE_PREF, style);
+  static saveLocalClockStylePreference(styleName) {
+    localStorage.setItem(this.getKey(STORAGE_KEYS.LOCAL_CLOCK_STYLE_PREF), styleName);
   }
 }
